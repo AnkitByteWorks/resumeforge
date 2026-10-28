@@ -1,0 +1,107 @@
+# languages
+Java|java 17|java 21
+Python
+JavaScript|js|ecmascript
+TypeScript|ts
+C
+C++|cpp
+C#|csharp
+.NET|dotnet|asp.net
+Kotlin
+PHP
+Golang
+Rust
+SQL
+# java ecosystem
+Spring Boot|springboot
+Spring Framework|spring
+Spring Security
+Hibernate
+JPA
+Maven
+Gradle
+JUnit
+Mockito
+Unit Testing|unit tests|unit test
+# web
+React|reactjs|react.js
+Angular
+Vue|vuejs|vue.js
+Node.js|nodejs|node js|node
+Express|expressjs|express.js
+HTML|html5
+CSS|css3
+Tailwind CSS|tailwind
+Bootstrap
+REST API|rest apis|restful|restful api|restful apis
+GraphQL
+Microservices|microservice
+# data
+MySQL
+PostgreSQL|postgres
+MongoDB|mongo
+Redis
+Oracle
+SQLite
+Elasticsearch
+Kafka|apache kafka
+RabbitMQ
+# devops and cloud
+Docker
+Kubernetes|k8s
+AWS|amazon web services
+Azure
+GCP|google cloud|google cloud platform
+Terraform
+Jenkins
+GitHub Actions
+CI/CD|ci cd|cicd|continuous integration
+Linux
+Bash|shell scripting
+Nginx
+Git
+GitHub
+GitLab
+# security, tools, practices
+JWT
+OAuth
+Postman
+Swagger|openapi
+Jira
+Agile
+Scrum
+OOP|object oriented programming|object oriented
+Data Structures|dsa|data structures and algorithms
+Algorithms
+Design Patterns
+System Design
+# data and AI
+Machine Learning|ml
+Deep Learning
+TensorFlow
+PyTorch
+Pandas
+NumPy
+Scikit-learn|sklearn
+NLP|natural language processing
+Data Analysis
+Data Science
+Statistics
+Power BI
+Tableau
+Excel|ms excel|microsoft excel
+# mobile and design
+Android
+Flutter
+React Native
+Firebase
+Figma
+Selenium
+Cypress
+# core engineering
+AutoCAD
+SolidWorks
+ANSYS
+MATLAB
+Six Sigma
+Lean Manufacturing

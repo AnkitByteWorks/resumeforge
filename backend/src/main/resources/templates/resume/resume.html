@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <title th:text="${resume.personalInfo.fullName()} + ' - Resume'">Resume</title>
+  <style th:utext="${css}"></style>
+</head>
+<body>
+  <h1 class="name" th:text="${resume.personalInfo.fullName()}">Name</h1>
+  <p class="contact" th:text="${#strings.listJoin(contacts, '  |  ')}">contact</p>
+
+  <div class="section" th:if="${not #strings.isEmpty(resume.summary)}">
+    <h2>Summary</h2>
+    <p th:text="${resume.summary}">Summary</p>
+  </div>
+
+  <div class="section" th:if="${not #lists.isEmpty(resume.skills)}">
+    <h2>Skills</h2>
+    <p th:text="${#strings.listJoin(resume.skills, ', ')}">Skills</p>
+  </div>
+
+  <div class="section" th:if="${not #lists.isEmpty(resume.experience)}">
+    <h2>Experience</h2>
+    <div class="entry" th:each="e : ${resume.experience}">
+      <p class="entry-title" th:text="${e.role() + ', ' + e.company()}">Role, Company</p>
+      <p class="entry-meta"
+         th:text="${#strings.defaultString(e.startDate(),'')} + ' - ' + (${e.current()} ? 'Present' : ${#strings.defaultString(e.endDate(),'')})">dates</p>
+      <ul th:if="${not #lists.isEmpty(e.bullets())}">
+        <li th:each="b : ${e.bullets()}" th:text="${b}">bullet</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section" th:if="${not #lists.isEmpty(resume.projects)}">
+    <h2>Projects</h2>
+    <div class="entry" th:each="p : ${resume.projects}">
+      <p class="entry-title" th:text="${p.name()}">Project</p>
+      <p class="entry-meta" th:if="${not #strings.isEmpty(p.techStack())}" th:text="${p.techStack()}">Tech</p>
+      <p class="entry-meta" th:if="${not #strings.isEmpty(p.link())}" th:text="${p.link()}">Link</p>
+      <ul th:if="${not #lists.isEmpty(p.bullets())}">
+        <li th:each="b : ${p.bullets()}" th:text="${b}">bullet</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section" th:if="${not #lists.isEmpty(resume.education)}">
+    <h2>Education</h2>
+    <div class="entry" th:each="e : ${resume.education}">
+      <p class="entry-title" th:text="${e.institution()}">Institution</p>
+      <p th:text="${e.degree() + (e.field() != null ? ', ' + e.field() : '')}">Degree</p>
+      <p class="entry-meta"
+         th:text="${#strings.defaultString(e.startDate(),'')} + ' - ' + ${#strings.defaultString(e.endDate(),'')}">dates</p>
+      <p class="entry-meta" th:if="${not #strings.isEmpty(e.score())}" th:text="'Score: ' + ${e.score()}">Score</p>
+    </div>
+  </div>
+
+  <div class="section" th:if="${not #lists.isEmpty(resume.certifications)}">
+    <h2>Certifications</h2>
+    <ul>
+      <li th:each="c : ${resume.certifications}" th:text="${c}">cert</li>
+    </ul>
+  </div>
+</body>
+</html>

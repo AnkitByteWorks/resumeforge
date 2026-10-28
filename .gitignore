@@ -1,0 +1,25 @@
+# Secrets & Environment
+.env
+.env.*
+!.env.example
+application-local.yml
+application-local.properties
+
+# Build & Dependency Outputs
+backend/target/
+**/target/
+*.class
+
+# IDE & Editor files
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.classpath
+.project
+.settings/
+
+# Operating System Files
+.DS_Store
+Thumbs.db

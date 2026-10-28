@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: resume-backend
+  mongodb:
+    uri: ${MONGODB_URI:mongodb://admin:admin123@localhost:27017/resumeforge?authSource=admin}
+
+gemini:
+  api-key: ${GEMINI_API_KEY:}
+  models: gemini-3.8-flash,gemini-3.5-flash-lite
+  base-url: https://generativelanguage.googleapis.com/v1beta
+
+ai:
+  rate-limit:
+    max-requests: 30
+    window-minutes: 60
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
