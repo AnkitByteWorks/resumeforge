@@ -1,5 +1,7 @@
 package com.resumeforge.resume_backend.controller;
 
+import com.resumeforge.resume_backend.security.CurrentUserId;
+
 import com.resumeforge.resume_backend.dto.AtsCheckRequest;
 import com.resumeforge.resume_backend.dto.AtsReport;
 import com.resumeforge.resume_backend.model.Resume;
@@ -18,7 +20,7 @@ public class AtsController {
     private final AtsService atsService;
 
     @PostMapping("/{id}/ats-check")
-    public AtsReport check(@RequestHeader("X-User-Id") String userId,
+    public AtsReport check(@CurrentUserId String userId,
                            @PathVariable String id,
                            @Valid @RequestBody(required = false) AtsCheckRequest body) {
         Resume resume = resumeService.getEntity(userId, id);

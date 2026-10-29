@@ -1,5 +1,7 @@
 package com.resumeforge.resume_backend.controller;
 
+import com.resumeforge.resume_backend.security.CurrentUserId;
+
 import com.resumeforge.resume_backend.dto.ai.*;
 import com.resumeforge.resume_backend.model.Resume;
 import com.resumeforge.resume_backend.service.ResumeService;
@@ -28,7 +30,7 @@ public class AiController {
 
     @PostMapping("/resumes/{id}/tailor")
     public TailorResumeResponse tailorResume(
-            @RequestHeader("X-User-Id") String userId,
+            @CurrentUserId String userId,
             @PathVariable String id,
             @Valid @RequestBody TailorResumeRequest request) {
         Resume resume = resumeService.getEntity(userId, id);
