@@ -9,6 +9,8 @@ application-local.properties
 backend/target/
 **/target/
 *.class
+frontend/node_modules/
+frontend/dist/
 
 # IDE & Editor files
 .idea/
