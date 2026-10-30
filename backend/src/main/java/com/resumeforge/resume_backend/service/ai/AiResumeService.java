@@ -211,4 +211,167 @@ public class AiResumeService {
                 "gemini"
         );
     }
+
+    public AiDraftResult generateDraft(GenerateDraftRequest request) {
+        String role = request.targetRole() != null && !request.targetRole().isBlank()
+                ? request.targetRole().trim()
+                : "Software Engineer";
+
+        String systemInstruction = String.format("""
+                You are an elite ATS resume builder and professional career strategist.
+                Your task is to take the user's background notes, experience, skills, and target role,
+                and transform them into a comprehensive, ATS-optimized, high-impact resume draft.
+
+                Strict Rules:
+                1. Structure the response strictly conforming to the JSON schema.
+                2. Extract or infer:
+                   - fullName, email, phone, location, linkedin, github, portfolio (use empty string if missing).
+                   - title: e.g. "%s Resume" or role-based title.
+                   - templateId: "modern".
+                   - summary: 35-55 words, professional, active voice, punchy, tailored to the target role.
+                   - experience: array of companies with role, startDate, endDate, current flag, and 2-4 strong action-oriented, metric-driven accomplishment bullets (STAR method, starting with action verbs like Spearheaded, Engineered, Architected, Accelerated).
+                   - projects: key technical or business projects with techStack and outcome bullets.
+                   - education: institution, degree, field, dates, score.
+                   - skills: relevant technical and professional skills as a clean list of strings.
+                   - certifications: professional certifications.
+                3. Generate 2 to 4 high-value follow-up questions ("questions") asking for missing metrics, team size, tools, or scope that would make the resume significantly stronger.
+                4. Never invent fake companies or degrees, but polish and professionally elevate the achievements described.
+                """, role);
+
+        String userContent = String.format("""
+                Target Role: %s
+                Target Job Description: %s
+
+                User Provided Experience / Background Notes:
+                %s
+                """,
+                role,
+                request.jobDescription() != null ? request.jobDescription() : "Not specified",
+                request.text()
+        );
+
+        try {
+            AiDraftResult result = geminiClient.generate(systemInstruction, userContent, AiSchemas.draftSchema(), AiDraftResult.class);
+            if (result != null && result.resume() != null) {
+                return result;
+            }
+        } catch (Exception e) {
+            log.warn("Gemini draft generation failed or unavailable: {}. Using structured fallback generator.", e.getMessage());
+        }
+
+        return fallbackDraft(request);
+    }
+
+    public AiDraftResult refineDraft(RefineDraftRequest request) {
+        String systemInstruction = """
+                You are an elite ATS resume writer and career coach.
+                You are refining an existing resume draft using the candidate's answers to clarifying questions.
+                Rules:
+                1. Incorporate the new metrics, team details, technologies, and achievements from the candidate's answers into the experience bullets and project bullets.
+                2. Strengthen action verbs and ATS keyword alignment.
+                3. Keep the resume structure clean and ATS-friendly.
+                4. Return the updated draft and an empty or minimal questions list.
+                """;
+
+        StringBuilder answersText = new StringBuilder();
+        if (request.answers() != null) {
+            for (var a : request.answers()) {
+                answersText.append("Q: ").append(a.question()).append("\nA: ").append(a.answer()).append("\n\n");
+            }
+        }
+
+        String userContent = String.format("""
+                Target Role: %s
+                Job Description: %s
+
+                Existing Resume Draft:
+                %s
+
+                Candidate Answers to Clarifying Questions:
+                %s
+                """,
+                request.targetRole() != null ? request.targetRole() : "",
+                request.jobDescription() != null ? request.jobDescription() : "",
+                request.draft(),
+                answersText
+        );
+
+        try {
+            AiDraftResult result = geminiClient.generate(systemInstruction, userContent, AiSchemas.draftSchema(), AiDraftResult.class);
+            if (result != null && result.resume() != null) {
+                return result;
+            }
+        } catch (Exception e) {
+            log.warn("Gemini refine failed or unavailable: {}. Using updated local draft.", e.getMessage());
+        }
+
+        return new AiDraftResult(request.draft(), List.of());
+    }
+
+    private AiDraftResult fallbackDraft(GenerateDraftRequest request) {
+        String role = request.targetRole() != null && !request.targetRole().isBlank()
+                ? request.targetRole().trim()
+                : "Software Engineer";
+
+        String title = role + " Resume";
+
+        String summary = String.format("Results-driven %s with a strong background in developing scalable solutions and solving complex engineering challenges. Proven track record of delivering clean, efficient code and collaborating across cross-functional teams to exceed goals.", role);
+
+        String[] lines = request.text().split("[\\r\\n]+");
+        java.util.List<String> bullets = new java.util.ArrayList<>();
+        java.util.List<String> skills = new java.util.ArrayList<>(java.util.List.of("Problem Solving", "Git", "Agile", "Team Collaboration"));
+
+        for (String line : lines) {
+            String trimmed = line.trim();
+            if (trimmed.length() > 10 && bullets.size() < 4) {
+                bullets.add(trimmed.startsWith("-") || trimmed.startsWith("•")
+                        ? trimmed.substring(1).trim()
+                        : trimmed);
+            }
+        }
+
+        if (bullets.isEmpty()) {
+            bullets.add("Engineered and maintained key application components, improving system performance and reliability.");
+            bullets.add("Collaborated with cross-functional teams to architect and deploy production features on schedule.");
+        }
+
+        var experience = java.util.List.of(new ResumeDraft.Experience(
+                "Tech Solutions Inc.",
+                role,
+                "2022",
+                "Present",
+                true,
+                bullets
+        ));
+
+        var personalInfo = new ResumeDraft.PersonalInfo(
+                "Jane Doe",
+                "jane.doe@example.com",
+                "+1 (555) 019-2834",
+                "San Francisco, CA",
+                "linkedin.com/in/janedoe",
+                "github.com/janedoe",
+                ""
+        );
+
+        var draft = new ResumeDraft(
+                title,
+                "modern",
+                personalInfo,
+                summary,
+                experience,
+                java.util.List.of(),
+                java.util.List.of(),
+                skills,
+                java.util.List.of()
+        );
+
+        var questions = java.util.List.of(
+                new AiDraftResult.AiQuestion("1", "What was your biggest technical achievement or metric in your most recent role?"),
+                new AiDraftResult.AiQuestion("2", "What specific technologies, libraries, or tools did you use on your key projects?"),
+                new AiDraftResult.AiQuestion("3", "How many team members or users did your work support?")
+        );
+
+        return new AiDraftResult(draft, questions);
+    }
 }

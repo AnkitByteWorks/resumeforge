@@ -28,6 +28,16 @@ public class AiController {
         return aiResumeService.generateSummary(request);
     }
 
+    @PostMapping("/draft")
+    public AiDraftResult generateDraft(@Valid @RequestBody GenerateDraftRequest request) {
+        return aiResumeService.generateDraft(request);
+    }
+
+    @PostMapping("/refine")
+    public AiDraftResult refineDraft(@Valid @RequestBody RefineDraftRequest request) {
+        return aiResumeService.refineDraft(request);
+    }
+
     @PostMapping("/resumes/{id}/tailor")
     public TailorResumeResponse tailorResume(
             @CurrentUserId String userId,
