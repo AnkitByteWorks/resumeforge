@@ -5,11 +5,11 @@ import com.resumeforge.resume_backend.model.Resume;
 
 import java.util.List;
 
-final class DraftMapper {
+public final class DraftMapper {
 
     private DraftMapper() {}
 
-    static ResumeDraft toDraft(Resume r) {
+    public static ResumeDraft toDraft(Resume r) {
         var p = r.getPersonalInfo();
         var personal = p == null
                 ? new ResumeDraft.PersonalInfo("", "", "", "", "", "", "")
@@ -25,15 +25,14 @@ final class DraftMapper {
                 safe(r.getSkills()), safe(r.getCertifications()));
     }
 
-    static Resume toEntity(ResumeDraft d) {
+    public static Resume toEntity(ResumeDraft d) {
         Resume r = new Resume();
         r.setTitle(d.title());
         r.setTemplateId(d.templateId());
-        var p = d.personalInfo();
-        if (p != null) {
-            r.setPersonalInfo(new Resume.PersonalInfo(p.fullName(), p.email(), p.phone(),
-                    p.location(), p.linkedin(), p.github(), p.portfolio()));
-        }
+        var p = d.personalInfo() != null ? d.personalInfo()
+                : new ResumeDraft.PersonalInfo("", "", "", "", "", "", "");
+        r.setPersonalInfo(new Resume.PersonalInfo(p.fullName(), p.email(), p.phone(),
+                p.location(), p.linkedin(), p.github(), p.portfolio()));
         r.setSummary(d.summary());
         r.setExperience(safe(d.experience()).stream().map(e -> new Resume.Experience(e.company(),
                 e.role(), e.startDate(), e.endDate(), e.current(), safe(e.bullets()))).toList());

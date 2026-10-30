@@ -1,11 +1,14 @@
 import { createContext, useContext } from 'react'
 import type { User } from '../types'
 
+export type LoginCredentials = { email: string; password: string }
+export type SignupCredentials = { name: string; email: string; password: string }
+
 export interface AuthState {
   user: User | null
   loading: boolean
-  login: (email: string, password: string) => Promise<void>
-  signup: (name: string, email: string, password: string) => Promise<void>
+  login: (emailOrCreds: string | LoginCredentials, password?: string) => Promise<void>
+  signup: (nameOrCreds: string | SignupCredentials, email?: string, password?: string) => Promise<void>
   logout: () => void
 }
 

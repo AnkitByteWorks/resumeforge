@@ -4,10 +4,58 @@
 
 @layer base {
   html {
-    background-color: var(--color-slate-50);
-  }
-  html.dark {
-    background-color: var(--color-slate-950);
+    background-color: #09090b;
     color-scheme: dark;
   }
+}
+
+@keyframes bubble-slow {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(25px, -30px) scale(1.1);
+  }
+}
+
+.animate-bubble-slow {
+  animation: bubble-slow 14s ease-in-out infinite;
+}
+
+@keyframes bubble-medium {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-30px, 20px) scale(1.08);
+  }
+}
+
+.animate-bubble-medium {
+  animation: bubble-medium 10s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(to right, rgba(255,255,255,0.05) 4%, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.05) 36%);
+  background-size: 1000px 100%;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(132, 204, 22, 0.4);
 }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { api, setUnauthorizedHandler, tokenStore } from '../api/client'
 import type { AuthResponse, User } from '../types'
-import { AuthContext } from './auth-context'
+import { AuthContext, type LoginCredentials, type SignupCredentials } from './auth-context'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -30,25 +30,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const login = useCallback(async (email: string, password: string) => {
-    const res = await api<AuthResponse>('/api/v1/auth/login', {
-      method: 'POST',
-      body: { email, password },
-      auth: false,
-    })
-    tokenStore.set(res.accessToken)
-    setUser(res.user)
-  }, [])
+  const login = useCallback(
+    async (emailOrCreds: string | LoginCredentials, pwd?: string) => {
+      const email = typeof emailOrCreds === 'object' ? emailOrCreds.email : emailOrCreds
+      const password = typeof emailOrCreds === 'object' ? emailOrCreds.password : (pwd ?? '')
+      const res = await api<AuthResponse>('/api/v1/auth/login', {
+        method: 'POST',
+        body: { email: email.trim(), password },
+        auth: false,
+      })
+      tokenStore.set(res.accessToken)
+      setUser(res.user)
+    },
+    [],
+  )
 
-  const signup = useCallback(async (name: string, email: string, password: string) => {
-    const res = await api<AuthResponse>('/api/v1/auth/signup', {
-      method: 'POST',
-      body: { name, email, password },
-      auth: false,
-    })
-    tokenStore.set(res.accessToken)
-    setUser(res.user)
-  }, [])
+  const signup = useCallback(
+    async (nameOrCreds: string | SignupCredentials, em?: string, pwd?: string) => {
+      const name = typeof nameOrCreds === 'object' ? nameOrCreds.name : nameOrCreds
+      const email = typeof nameOrCreds === 'object' ? nameOrCreds.email : (em ?? '')
+      const password = typeof nameOrCreds === 'object' ? nameOrCreds.password : (pwd ?? '')
+      const res = await api<AuthResponse>('/api/v1/auth/signup', {
+        method: 'POST',
+        body: { name: name.trim(), email: email.trim(), password },
+        auth: false,
+      })
+      tokenStore.set(res.accessToken)
+      setUser(res.user)
+    },
+    [],
+  )
 
   const logout = useCallback(() => {
     tokenStore.clear()

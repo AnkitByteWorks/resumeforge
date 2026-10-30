@@ -1,10 +1,12 @@
 package com.resumeforge.resume_backend.controller;
 
+import com.resumeforge.resume_backend.dto.ai.ResumeDraft;
 import com.resumeforge.resume_backend.model.Resume;
 import com.resumeforge.resume_backend.security.CurrentUserId;
 import com.resumeforge.resume_backend.service.ResumeRenderService;
 import com.resumeforge.resume_backend.service.ResumeService;
 import com.resumeforge.resume_backend.service.TemplateRegistry;
+import com.resumeforge.resume_backend.service.ai.DraftMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -26,6 +28,11 @@ public class RenderController {
     @GetMapping("/templates")
     public List<TemplateRegistry.TemplateInfo> templates() {
         return registry.all();
+    }
+
+    @PostMapping(value = "/preview", produces = MediaType.TEXT_HTML_VALUE)
+    public String previewDraft(@RequestBody ResumeDraft draft) {
+        return renderService.renderHtml(DraftMapper.toEntity(draft));
     }
 
     @GetMapping(value = "/resumes/{id}/preview", produces = MediaType.TEXT_HTML_VALUE)
