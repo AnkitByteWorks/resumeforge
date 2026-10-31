@@ -12,9 +12,10 @@ public final class DraftMapper {
     public static ResumeDraft toDraft(Resume r) {
         var p = r.getPersonalInfo();
         var personal = p == null
-                ? new ResumeDraft.PersonalInfo("", "", "", "", "", "", "")
+                ? new ResumeDraft.PersonalInfo("", "", "", "", "", "", "", null, null)
                 : new ResumeDraft.PersonalInfo(n(p.fullName()), n(p.email()), n(p.phone()),
-                        n(p.location()), n(p.linkedin()), n(p.github()), n(p.portfolio()));
+                        n(p.location()), n(p.linkedin()), n(p.github()), n(p.portfolio()),
+                        p.photoUrl(), n(p.headline()));
         return new ResumeDraft(n(r.getTitle()), n(r.getTemplateId()), personal, n(r.getSummary()),
                 safe(r.getExperience()).stream().map(e -> new ResumeDraft.Experience(n(e.company()),
                         n(e.role()), n(e.startDate()), n(e.endDate()), e.current(), safe(e.bullets()))).toList(),
@@ -30,9 +31,9 @@ public final class DraftMapper {
         r.setTitle(d.title());
         r.setTemplateId(d.templateId());
         var p = d.personalInfo() != null ? d.personalInfo()
-                : new ResumeDraft.PersonalInfo("", "", "", "", "", "", "");
+                : new ResumeDraft.PersonalInfo("", "", "", "", "", "", "", null, null);
         r.setPersonalInfo(new Resume.PersonalInfo(p.fullName(), p.email(), p.phone(),
-                p.location(), p.linkedin(), p.github(), p.portfolio()));
+                p.location(), p.linkedin(), p.github(), p.portfolio(), p.photoUrl(), p.headline()));
         r.setSummary(d.summary());
         r.setExperience(safe(d.experience()).stream().map(e -> new Resume.Experience(e.company(),
                 e.role(), e.startDate(), e.endDate(), e.current(), safe(e.bullets()))).toList());

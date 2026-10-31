@@ -6,8 +6,18 @@
   <style th:utext="${css}"></style>
 </head>
 <body>
-  <h1 class="name" th:text="${resume.personalInfo.fullName()}">Name</h1>
-  <p class="contact" th:text="${#strings.listJoin(contacts, '  |  ')}">contact</p>
+  <table style="width: 100%; border-collapse: collapse; margin-bottom: 8pt;">
+    <tr>
+      <td style="vertical-align: middle;">
+        <h1 class="name" th:text="${resume.personalInfo.fullName()}">Name</h1>
+        <p class="headline" th:if="${not #strings.isEmpty(resume.personalInfo.headline())}" th:text="${resume.personalInfo.headline()}" style="font-size: 11pt; color: #475569; margin: 2pt 0 4pt 0; font-weight: 600;"></p>
+        <p class="contact" th:text="${#strings.listJoin(contacts, '  |  ')}">contact</p>
+      </td>
+      <td style="width: 70pt; text-align: right; vertical-align: middle;" th:if="${not #strings.isEmpty(resume.personalInfo.photoUrl())}">
+        <img th:src="${resume.personalInfo.photoUrl()}" style="width: 60pt; height: 60pt; border-radius: 50%; object-fit: cover; border: 2px solid #cbd5e1;"/>
+      </td>
+    </tr>
+  </table>
 
   <div class="section" th:if="${not #strings.isEmpty(resume.summary)}">
     <h2>Summary</h2>

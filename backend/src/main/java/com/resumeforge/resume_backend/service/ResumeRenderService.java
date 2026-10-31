@@ -29,7 +29,8 @@ public class ResumeRenderService {
         ctx.setVariable("resume", resume);
         ctx.setVariable("contacts", contacts(resume != null ? resume.getPersonalInfo() : null));
         ctx.setVariable("css", loadCss(id));
-        return engine.process("resume/resume", ctx);
+        String view = registry.isTwoColumn(id) ? "resume/resume-twocolumn" : "resume/resume";
+        return engine.process(view, ctx);
     }
 
     public byte[] renderPdf(Resume resume) {

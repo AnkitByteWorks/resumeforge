@@ -23,8 +23,16 @@ public record ResumeDraft(
             String location,
             String linkedin,
             String github,
-            String portfolio
-    ) {}
+            String portfolio,
+            String photoUrl,
+            String headline
+    ) {
+        public PersonalInfo(String fullName, String email, String phone,
+                            String location, String linkedin, String github,
+                            String portfolio) {
+            this(fullName, email, phone, location, linkedin, github, portfolio, null, null);
+        }
+    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Experience(

@@ -19,13 +19,24 @@ const SAMPLE_CHIPS = [
   'Data Scientist',
 ]
 
-const TEMPLATE_OPTIONS = [
-  { id: 'modern-02', name: 'Modern Navy', color: '#1f4e79', desc: 'Sans-serif with deep blue accent lines' },
-  { id: 'emerald-03', name: 'Executive Emerald', color: '#047857', desc: 'Crisp structure with forest emerald accents' },
-  { id: 'violet-05', name: 'Tech Violet', color: '#6d28d9', desc: 'Startup tech aesthetic with electric purple' },
-  { id: 'crimson-06', name: 'Ruby Crimson', color: '#9f1239', desc: 'Distinguished burgundy accents for impact' },
-  { id: 'slate-04', name: 'Minimalist Slate', color: '#334155', desc: 'Airy minimalist typography in charcoal slate' },
-  { id: 'classic-01', name: 'Classic Serif', color: '#000000', desc: 'Traditional centered serif, monochrome ATS' },
+const TEMPLATE_OPTIONS: Array<{
+  id: string
+  name: string
+  color: string
+  category: 'ATS Standard' | 'Photo & Creative' | 'Split Layout'
+  hasPhoto: boolean
+  desc: string
+}> = [
+  { id: 'modern-02', name: 'Modern Navy', color: '#1f4e79', category: 'ATS Standard', hasPhoto: false, desc: 'Sans-serif with deep blue accent lines, high ATS score' },
+  { id: 'classic-01', name: 'Classic Serif', color: '#111827', category: 'ATS Standard', hasPhoto: false, desc: 'Traditional centered serif, monochrome ATS standard' },
+  { id: 'emerald-03', name: 'Executive Emerald', color: '#047857', category: 'ATS Standard', hasPhoto: false, desc: 'Crisp structure with forest emerald accents' },
+  { id: 'slate-04', name: 'Minimalist Slate', color: '#334155', category: 'ATS Standard', hasPhoto: false, desc: 'Airy minimalist typography in charcoal slate' },
+  { id: 'violet-05', name: 'Tech Violet', color: '#6d28d9', category: 'ATS Standard', hasPhoto: false, desc: 'Startup tech aesthetic with electric purple' },
+  { id: 'crimson-06', name: 'Ruby Crimson', color: '#9f1239', category: 'ATS Standard', hasPhoto: false, desc: 'Distinguished burgundy accents for impact' },
+  { id: 'photo-sidebar-01', name: 'Foundation Purple', color: '#7c3aed', category: 'Photo & Creative', hasPhoto: true, desc: '2-column layout with circular headshot & left skills sidebar' },
+  { id: 'photo-executive-02', name: 'Executive Emerald', color: '#059669', category: 'Photo & Creative', hasPhoto: true, desc: 'Clean split layout with avatar badge & timeline highlights' },
+  { id: 'photo-nordic-03', name: 'Nordic Headshot', color: '#78716c', category: 'Photo & Creative', hasPhoto: true, desc: 'Minimalist warm beige sidebar with framed headshot' },
+  { id: 'split-navy-04', name: 'Navy Split Accent', color: '#0f172a', category: 'Split Layout', hasPhoto: false, desc: 'Deep navy right sidebar with white text, bold geometry' },
 ]
 
 export function CreateResumePage() {
@@ -37,13 +48,17 @@ export function CreateResumePage() {
   // Step 1 State
   const [rawText, setRawText] = useState('')
   const [targetRole, setTargetRole] = useState('')
+  const [includePhoto, setIncludePhoto] = useState(false)
+  const [photoBase64, setPhotoBase64] = useState('')
+  const [headline, setHeadline] = useState('')
 
   // Step 2 State
   const [questions, setQuestions] = useState<{ question: string; answer: string }[]>([])
   const [draft, setDraft] = useState<ResumeDraft | null>(null)
 
   // Step 3 State (Editor & Preview)
-  const [activeTab, setActiveTab] = useState('experience')
+  const [activeTab, setActiveTab] = useState('template')
+  const [templateFilter, setTemplateFilter] = useState<'All' | 'ATS Standard' | 'Photo & Creative' | 'Split Layout'>('All')
   const [previewHtmlString, setPreviewHtmlString] = useState('')
   const [isPreviewLoading, setIsPreviewLoading] = useState(false)
   const [previewError, setPreviewError] = useState<string | null>(null)
@@ -100,7 +115,18 @@ export function CreateResumePage() {
       })
 
       const generatedDraft = response.draft ?? response.resume
-      setDraft(generatedDraft)
+      const resolvedHeadline = headline.trim() || targetRole.trim() || generatedDraft.personalInfo?.headline || ''
+      const updatedDraft: ResumeDraft = {
+        ...generatedDraft,
+        personalInfo: {
+          ...generatedDraft.personalInfo,
+          photoUrl: includePhoto ? photoBase64 : '',
+          headline: resolvedHeadline,
+        },
+        templateId: includePhoto ? 'photo-sidebar-01' : (generatedDraft.templateId || 'modern-02'),
+      }
+
+      setDraft(updatedDraft)
 
       if (response.questions && response.questions.length > 0) {
         setQuestions(
@@ -141,9 +167,19 @@ export function CreateResumePage() {
       })
 
       const refinedDraft = (refined.draft ?? refined.resume ?? refined) as ResumeDraft
-      setDraft(refinedDraft)
+      const finalDraft: ResumeDraft = {
+        ...refinedDraft,
+        personalInfo: {
+          ...refinedDraft.personalInfo,
+          photoUrl: draft.personalInfo?.photoUrl || (includePhoto ? photoBase64 : ''),
+          headline: draft.personalInfo?.headline || headline.trim() || targetRole.trim() || '',
+        },
+        templateId: draft.templateId || 'modern-02',
+      }
+
+      setDraft(finalDraft)
       setCurrentStep(3)
-      void updatePreview(refinedDraft)
+      void updatePreview(finalDraft)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to refine resume.'
       setError(msg)
@@ -196,7 +232,7 @@ export function CreateResumePage() {
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div>
             <label className="block text-sm font-medium text-zinc-300 mb-2">
               What role are you targeting? (Optional)
@@ -208,6 +244,139 @@ export function CreateResumePage() {
               placeholder="e.g. Senior Frontend Engineer"
               className="w-full bg-black/40 border border-zinc-800 text-white rounded-lg px-4 py-3 outline-none focus:border-[#84cc16] focus:ring-1 focus:ring-[#84cc16] transition-all"
             />
+          </div>
+
+          {/* Photo & Layout Preference */}
+          <div className="bg-black/30 border border-white/10 rounded-xl p-4">
+            <label className="block text-sm font-medium text-zinc-200 mb-1">
+              Resume Layout &amp; Photo Style
+            </label>
+            <p className="text-xs text-zinc-400 mb-3">
+              Most US/tech ATS systems prefer no photo, while creative &amp; international roles stand out with a professional headshot.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+              <button
+                type="button"
+                onClick={() => setIncludePhoto(false)}
+                className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-3 ${
+                  !includePhoto
+                    ? 'bg-[#84cc16]/10 border-[#84cc16] text-white ring-1 ring-[#84cc16]'
+                    : 'bg-black/40 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                }`}
+              >
+                <div className="w-8 h-8 rounded-lg bg-zinc-800/80 flex items-center justify-center text-lg shrink-0">
+                  📄
+                </div>
+                <div>
+                  <div className="font-semibold text-xs text-white flex items-center gap-1.5">
+                    No Photo
+                    <span className="text-[10px] bg-white/10 text-zinc-300 px-1.5 py-0.5 rounded font-normal">
+                      ATS Standard
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-zinc-400 mt-0.5">
+                    Classic single column, maximum ATS parser compatibility
+                  </p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIncludePhoto(true)}
+                className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-3 ${
+                  includePhoto
+                    ? 'bg-[#84cc16]/10 border-[#84cc16] text-white ring-1 ring-[#84cc16]'
+                    : 'bg-black/40 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                }`}
+              >
+                <div className="w-8 h-8 rounded-lg bg-zinc-800/80 flex items-center justify-center text-lg shrink-0">
+                  📷
+                </div>
+                <div>
+                  <div className="font-semibold text-xs text-white flex items-center gap-1.5">
+                    Include Headshot Photo
+                    <span className="text-[10px] bg-[#84cc16]/20 text-[#84cc16] px-1.5 py-0.5 rounded font-medium">
+                      Modern 2-Col
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-zinc-400 mt-0.5">
+                    2-column sidebar layout with circular avatar &amp; accent bar
+                  </p>
+                </div>
+              </button>
+            </div>
+
+            {includePhoto && (
+              <div className="pt-3 border-t border-white/5 space-y-3 animate-in fade-in duration-300">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  {photoBase64 ? (
+                    <div className="relative group w-16 h-16 shrink-0">
+                      <img
+                        src={photoBase64}
+                        alt="Headshot Preview"
+                        className="w-16 h-16 rounded-full object-cover border-2 border-[#84cc16] shadow-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setPhotoBase64('')}
+                        title="Remove photo"
+                        className="absolute -top-1 -right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow cursor-pointer"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 rounded-full border-2 border-dashed border-zinc-700 flex flex-col items-center justify-center text-zinc-500 shrink-0 bg-black/30">
+                      <svg className="w-6 h-6 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      <span className="text-[8px] uppercase font-mono">Photo</span>
+                    </div>
+                  )}
+
+                  <div className="flex-1">
+                    <label className="block text-xs font-medium text-zinc-300 mb-1">
+                      Upload Headshot Photo (JPG / PNG)
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          if (file.size > 5 * 1024 * 1024) {
+                            setError('Image file must be under 5MB.')
+                            return
+                          }
+                          const reader = new FileReader()
+                          reader.onload = () => {
+                            setPhotoBase64(reader.result as string)
+                          }
+                          reader.readAsDataURL(file)
+                        }
+                      }}
+                      className="text-xs text-zinc-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-[#84cc16]/10 file:text-[#84cc16] hover:file:bg-[#84cc16]/20 file:cursor-pointer cursor-pointer"
+                    />
+                    <p className="text-[11px] text-zinc-500 mt-1">
+                      Professional headshot portrait recommended.
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-zinc-300 mb-1">
+                    Professional Headline / Subtitle (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={headline}
+                    onChange={(e) => setHeadline(e.target.value)}
+                    placeholder="e.g. Senior Full-Stack Engineer | React & Cloud Architect"
+                    className="w-full bg-black/40 border border-zinc-800 text-white text-xs rounded-lg px-3 py-2 outline-none focus:border-[#84cc16]"
+                  />
+                </div>
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-zinc-300 mb-2">
@@ -396,8 +565,37 @@ export function CreateResumePage() {
                         <p className="text-xs text-zinc-400">
                           Select a design &amp; color theme. Live preview reflects your choice immediately.
                         </p>
+
+                        {/* Category filter tabs */}
+                        <div className="flex flex-wrap gap-1.5 pb-1">
+                          {(['All', 'ATS Standard', 'Photo & Creative', 'Split Layout'] as const).map((cat) => (
+                            <button
+                              key={cat}
+                              type="button"
+                              onClick={() => setTemplateFilter(cat)}
+                              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                                templateFilter === cat
+                                  ? 'bg-[#84cc16] text-black font-semibold'
+                                  : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white'
+                              }`}
+                            >
+                              {cat}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Photo tip banner if template has photo but no photo uploaded */}
+                        {TEMPLATE_OPTIONS.find((t) => t.id === draft.templateId)?.hasPhoto &&
+                          !draft.personalInfo?.photoUrl && (
+                            <div className="p-2.5 bg-amber-950/40 border border-amber-600/40 rounded-lg text-amber-200 text-xs flex items-center justify-between">
+                              <span>📸 This template includes a photo space. Add your photo in Personal Info!</span>
+                            </div>
+                          )}
+
                         <div className="grid grid-cols-2 gap-2.5">
-                          {TEMPLATE_OPTIONS.map((t) => {
+                          {TEMPLATE_OPTIONS.filter(
+                            (t) => templateFilter === 'All' || t.category === templateFilter,
+                          ).map((t) => {
                             const isSelected =
                               draft.templateId === t.id ||
                               (t.id === 'modern-02' && (!draft.templateId || draft.templateId === 'modern'))
@@ -412,17 +610,31 @@ export function CreateResumePage() {
                                     : 'bg-white/[0.03] border-white/10 hover:border-white/20 hover:bg-white/[0.06]'
                                 }`}
                               >
-                                <div className="flex items-center justify-between mb-1.5">
-                                  <div className="flex items-center gap-2">
-                                    <span
-                                      className="w-3.5 h-3.5 rounded-full border border-white/20 shadow-sm"
-                                      style={{ backgroundColor: t.color }}
-                                    />
-                                    <span className="font-semibold text-xs text-white">{t.name}</span>
+                                <div>
+                                  <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center gap-1.5">
+                                      <span
+                                        className="w-3 h-3 rounded-full border border-white/20 shrink-0"
+                                        style={{ backgroundColor: t.color }}
+                                      />
+                                      <span className="font-semibold text-xs text-white leading-tight">
+                                        {t.name}
+                                      </span>
+                                    </div>
+                                    {isSelected && (
+                                      <span className="text-[#84cc16] font-bold text-xs shrink-0">✓</span>
+                                    )}
                                   </div>
-                                  {isSelected && (
-                                    <span className="text-[#84cc16] font-bold text-xs">✓ Active</span>
-                                  )}
+                                  <div className="flex items-center gap-1.5 mb-1.5">
+                                    {t.hasPhoto && (
+                                      <span className="text-[10px] bg-purple-500/20 text-purple-300 px-1 rounded font-mono">
+                                        📸 Photo
+                                      </span>
+                                    )}
+                                    <span className="text-[10px] bg-white/5 text-zinc-400 px-1 rounded">
+                                      {t.category}
+                                    </span>
+                                  </div>
                                 </div>
                                 <p className="text-[11px] text-zinc-400 leading-tight">{t.desc}</p>
                               </button>
@@ -433,7 +645,84 @@ export function CreateResumePage() {
                     )}
 
                     {section === 'Personal Info' && (
-                      <div className="space-y-3">
+                      <div className="space-y-3.5">
+                        {/* Profile Photo Manager */}
+                        <div className="p-3 bg-white/[0.03] rounded-lg border border-white/10 flex items-center gap-3">
+                          {pInfo.photoUrl ? (
+                            <div className="relative w-14 h-14 shrink-0">
+                              <img
+                                src={pInfo.photoUrl}
+                                alt="Headshot"
+                                className="w-14 h-14 rounded-full object-cover border-2 border-[#84cc16]"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-14 h-14 rounded-full bg-black/40 border border-zinc-800 flex items-center justify-center text-zinc-500 shrink-0">
+                              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                            </div>
+                          )}
+                          <div className="flex-1 space-y-1">
+                            <span className="block text-xs font-semibold text-white">Profile Photo</span>
+                            <div className="flex items-center gap-2">
+                              <label className="text-xs bg-white/10 hover:bg-white/20 text-zinc-200 px-2.5 py-1 rounded cursor-pointer transition-colors inline-block">
+                                {pInfo.photoUrl ? 'Change Photo' : 'Upload Photo'}
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0]
+                                    if (file) {
+                                      const reader = new FileReader()
+                                      reader.onload = () => {
+                                        handleDraftChange({
+                                          ...draft,
+                                          personalInfo: { ...pInfo, photoUrl: reader.result as string },
+                                        })
+                                      }
+                                      reader.readAsDataURL(file)
+                                    }
+                                  }}
+                                />
+                              </label>
+                              {pInfo.photoUrl && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleDraftChange({
+                                      ...draft,
+                                      personalInfo: { ...pInfo, photoUrl: '' },
+                                    })
+                                  }
+                                  className="text-xs text-red-400 hover:text-red-300 cursor-pointer"
+                                >
+                                  Remove
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-mono uppercase tracking-wider text-zinc-400 mb-1">
+                            Headline / Professional Title
+                          </label>
+                          <input
+                            type="text"
+                            value={pInfo.headline || ''}
+                            onChange={(e) =>
+                              handleDraftChange({
+                                ...draft,
+                                personalInfo: { ...pInfo, headline: e.target.value },
+                              })
+                            }
+                            className="w-full bg-black/40 border border-zinc-800 rounded-md px-3 py-2 text-sm text-white focus:border-[#84cc16] outline-none"
+                            placeholder="e.g. Senior Full-Stack Engineer"
+                          />
+                        </div>
+
                         <div>
                           <label className="block text-xs font-mono uppercase tracking-wider text-zinc-400 mb-1">
                             Full Name
@@ -504,6 +793,62 @@ export function CreateResumePage() {
                               }
                               className="w-full bg-black/40 border border-zinc-800 rounded-md px-3 py-2 text-sm text-white focus:border-[#84cc16] outline-none"
                               placeholder="City, State"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-xs font-mono uppercase tracking-wider text-zinc-400 mb-1">
+                              LinkedIn
+                            </label>
+                            <input
+                              type="text"
+                              value={pInfo.linkedin || ''}
+                              onChange={(e) =>
+                                handleDraftChange({
+                                  ...draft,
+                                  personalInfo: { ...pInfo, linkedin: e.target.value },
+                                })
+                              }
+                              className="w-full bg-black/40 border border-zinc-800 rounded-md px-3 py-2 text-xs text-white focus:border-[#84cc16] outline-none"
+                              placeholder="linkedin.com/in/username"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-mono uppercase tracking-wider text-zinc-400 mb-1">
+                              GitHub
+                            </label>
+                            <input
+                              type="text"
+                              value={pInfo.github || ''}
+                              onChange={(e) =>
+                                handleDraftChange({
+                                  ...draft,
+                                  personalInfo: { ...pInfo, github: e.target.value },
+                                })
+                              }
+                              className="w-full bg-black/40 border border-zinc-800 rounded-md px-3 py-2 text-xs text-white focus:border-[#84cc16] outline-none"
+                              placeholder="github.com/username"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-mono uppercase tracking-wider text-zinc-400 mb-1">
+                              Portfolio
+                            </label>
+                            <input
+                              type="text"
+                              value={pInfo.portfolio || ''}
+                              onChange={(e) =>
+                                handleDraftChange({
+                                  ...draft,
+                                  personalInfo: { ...pInfo, portfolio: e.target.value },
+                                })
+                              }
+                              className="w-full bg-black/40 border border-zinc-800 rounded-md px-3 py-2 text-xs text-white focus:border-[#84cc16] outline-none"
+                              placeholder="yoursite.com"
                             />
                           </div>
                         </div>

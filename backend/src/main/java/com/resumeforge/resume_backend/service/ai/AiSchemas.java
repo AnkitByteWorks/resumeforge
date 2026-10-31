@@ -24,7 +24,7 @@ final class AiSchemas {
 
     private static Map<String, Object> resumeSchema() {
         var personal = object(p("fullName", STR, "email", STR, "phone", STR, "location", STR,
-                "linkedin", STR, "github", STR, "portfolio", STR));
+                "linkedin", STR, "github", STR, "portfolio", STR, "photoUrl", STR, "headline", STR));
         var experience = object(p("company", STR, "role", STR, "startDate", STR, "endDate", STR,
                 "current", BOOL, "bullets", array(STR, null)));
         var project = object(p("name", STR, "techStack", STR, "link", STR, "bullets", array(STR, null)));

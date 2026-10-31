@@ -13,6 +13,8 @@ export function cleanDraft(d: ResumeDraft): ResumeDraft {
     linkedin: '',
     github: '',
     portfolio: '',
+    photoUrl: '',
+    headline: '',
   }
   return {
     ...d,
@@ -27,6 +29,8 @@ export function cleanDraft(d: ResumeDraft): ResumeDraft {
       linkedin: trim(p.linkedin),
       github: trim(p.github),
       portfolio: trim(p.portfolio),
+      photoUrl: trim(p.photoUrl),
+      headline: trim(p.headline),
     },
     experience: (d.experience ?? [])
       .filter(e => trim(e.company) && trim(e.role))

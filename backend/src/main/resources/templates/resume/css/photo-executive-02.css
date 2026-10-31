@@ -1,0 +1,31 @@
+@page { size: A4; margin: 10mm 12mm; }
+body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5pt; color: #1e293b; line-height: 1.35; margin: 0; padding: 0; }
+p { margin: 0; }
+
+.layout-table { width: 100%; border-collapse: collapse; }
+.sidebar-col { width: 33%; vertical-align: top; background-color: #064e3b; color: #ffffff; padding: 16pt 12pt; }
+.main-col { width: 67%; vertical-align: top; padding: 16pt 16pt; background-color: #ffffff; }
+
+.photo-container { text-align: center; margin-bottom: 14pt; }
+.profile-photo { width: 85pt; height: 85pt; border-radius: 50%; border: 3px solid #34d399; object-fit: cover; }
+
+.header-box { margin-bottom: 12pt; border-bottom: 2px solid #e2e8f0; padding-bottom: 8pt; }
+.header-box .name { font-size: 22pt; color: #064e3b; margin: 0 0 2pt 0; font-weight: 800; letter-spacing: -0.5px; }
+.header-box .headline { font-size: 11pt; color: #059669; margin: 0 0 6pt 0; font-weight: 600; }
+.header-box .summary-text { font-size: 9pt; color: #475569; line-height: 1.4; }
+
+.sidebar-section { margin-bottom: 14pt; }
+.sidebar-title { font-size: 10pt; color: #a7f3d0; text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 1px solid #047857; padding-bottom: 3pt; margin: 0 0 6pt 0; font-weight: 700; }
+.contact-list, .skills-list, .cert-list { list-style: none; padding: 0; margin: 0; }
+.contact-list li { font-size: 8.5pt; color: #ecfdf5; margin-bottom: 4pt; word-break: break-all; }
+.skills-list li { font-size: 8.5pt; color: #ffffff; background: #047857; border-radius: 2pt; padding: 2pt 5pt; margin-bottom: 3pt; display: inline-block; }
+.cert-list li { font-size: 8.5pt; color: #d1fae5; margin-bottom: 3pt; }
+
+.main-section { margin-bottom: 12pt; }
+.main-heading { font-size: 11pt; color: #064e3b; text-transform: uppercase; letter-spacing: 1px; border-bottom: 2px solid #059669; padding-bottom: 3pt; margin: 0 0 6pt 0; font-weight: 700; }
+.entry { margin-bottom: 7pt; page-break-inside: avoid; }
+.entry-title { font-weight: 700; color: #0f172a; font-size: 10pt; }
+.entry-subtitle { font-weight: 600; color: #059669; font-size: 9pt; }
+.entry-meta { font-size: 8.5pt; color: #64748b; margin-bottom: 2pt; }
+ul { margin: 2pt 0 0 0; padding-left: 14pt; }
+li { margin-bottom: 1.5pt; color: #334155; }

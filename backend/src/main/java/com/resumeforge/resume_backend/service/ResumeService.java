@@ -63,7 +63,7 @@ public class ResumeService {
         r.setTemplateId(q.templateId());
         var p = q.personalInfo();
         r.setPersonalInfo(new Resume.PersonalInfo(p.fullName(), p.email(), p.phone(),
-                p.location(), p.linkedin(), p.github(), p.portfolio()));
+                p.location(), p.linkedin(), p.github(), p.portfolio(), p.photoUrl(), p.headline()));
         r.setSummary(q.summary());
         r.setExperience(orEmpty(q.experience()).stream().map(e ->
                 new Resume.Experience(e.company(), e.role(), e.startDate(), e.endDate(),

@@ -23,6 +23,9 @@ export interface TemplateInfo {
   id: string
   name: string
   description: string
+  hasPhoto?: boolean
+  category?: string
+  accentColor?: string
 }
 
 export interface DraftPersonalInfo {
@@ -33,6 +36,8 @@ export interface DraftPersonalInfo {
   linkedin: string
   github: string
   portfolio: string
+  photoUrl?: string
+  headline?: string
 }
 
 export interface DraftExperience {

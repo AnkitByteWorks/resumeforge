@@ -21,7 +21,14 @@ public record ResumeRequest(
             @NotBlank @Email String email,
             @Size(max = 20) String phone,
             @Size(max = 100) String location,
-            String linkedin, String github, String portfolio) {}
+            String linkedin, String github, String portfolio,
+            String photoUrl, String headline) {
+        public PersonalInfoDto(String fullName, String email, String phone,
+                               String location, String linkedin, String github,
+                               String portfolio) {
+            this(fullName, email, phone, location, linkedin, github, portfolio, null, null);
+        }
+    }
 
     public record ExperienceDto(
             @NotBlank String company, @NotBlank String role,
