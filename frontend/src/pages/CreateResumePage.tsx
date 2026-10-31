@@ -535,8 +535,8 @@ export function CreateResumePage() {
     return (
       <div className="animate-in fade-in slide-in-from-right-8 duration-500 flex-1 flex gap-6 min-h-0 h-[calc(100vh-105px)] max-h-[calc(100vh-105px)]">
         {/* Left Side: Editor */}
-        <div className="w-1/2 flex flex-col gap-4 overflow-y-auto pr-2 pb-24 min-h-0 custom-scrollbar">
-          <div className="flex items-center justify-between mb-2">
+        <div className="w-1/2 flex flex-col gap-3 overflow-y-auto pr-2 pb-32 min-h-0 custom-scrollbar">
+          <div className="flex items-center justify-between mb-1 shrink-0">
             <h2 className="text-2xl font-medium text-white">Editor</h2>
             <button
               type="button"
@@ -555,14 +555,14 @@ export function CreateResumePage() {
             return (
               <div
                 key={section}
-                className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden transition-all"
+                className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden transition-all shrink-0"
               >
                 <button
                   type="button"
                   onClick={() => setActiveTab(isActive ? '' : tabKey)}
-                  className="w-full flex items-center justify-between p-4 bg-transparent hover:bg-white/5 transition-colors cursor-pointer"
+                  className="w-full flex items-center justify-between px-4 py-3.5 min-h-[50px] bg-transparent hover:bg-white/5 transition-colors cursor-pointer"
                 >
-                  <span className="font-medium text-white">{section}</span>
+                  <span className="font-medium text-sm text-white select-none">{section}</span>
                   <svg
                     className={`w-4 h-4 text-zinc-400 transition-transform ${isActive ? 'rotate-180' : ''}`}
                     fill="none"
@@ -607,7 +607,7 @@ export function CreateResumePage() {
                             </div>
                           )}
 
-                        <div className="grid grid-cols-2 gap-2.5 max-h-[380px] overflow-y-auto pr-1.5 custom-scrollbar">
+                        <div className="grid grid-cols-2 gap-2.5 max-h-[290px] overflow-y-auto pr-1.5 pb-2 custom-scrollbar">
                           {TEMPLATE_OPTIONS.filter(
                             (t) => templateFilter === 'All' || t.category === templateFilter,
                           ).map((t) => {
@@ -619,13 +619,13 @@ export function CreateResumePage() {
                                 key={t.id}
                                 type="button"
                                 onClick={() => handleDraftChange({ ...draft, templateId: t.id })}
-                                className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-1.5 min-h-[92px] ${
+                                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between h-[96px] overflow-hidden ${
                                   isSelected
                                     ? 'bg-white/10 border-[#84cc16] shadow-[0_0_15px_rgba(132,204,22,0.15)] ring-1 ring-[#84cc16]'
                                     : 'bg-white/[0.03] border-white/10 hover:border-white/20 hover:bg-white/[0.06]'
                                 }`}
                               >
-                                <div>
+                                <div className="w-full">
                                   <div className="flex items-center justify-between mb-1">
                                     <div className="flex items-center gap-1.5 min-w-0">
                                       <span
@@ -640,7 +640,7 @@ export function CreateResumePage() {
                                       <span className="text-[#84cc16] font-bold text-xs shrink-0 ml-1">✓</span>
                                     )}
                                   </div>
-                                  <div className="flex items-center gap-1.5 mb-1.5">
+                                  <div className="flex items-center gap-1.5 mb-1">
                                     {t.hasPhoto && (
                                       <span className="text-[10px] bg-purple-500/20 text-purple-300 px-1 rounded font-mono shrink-0">
                                         📸 Photo
@@ -651,7 +651,7 @@ export function CreateResumePage() {
                                     </span>
                                   </div>
                                 </div>
-                                <p className="text-[11px] text-zinc-400 leading-snug line-clamp-2 mt-auto">{t.desc}</p>
+                                <p className="text-[11px] text-zinc-400 leading-snug line-clamp-2 w-full">{t.desc}</p>
                               </button>
                             )
                           })}
