@@ -374,4 +374,62 @@ public class AiResumeService {
 
         return new AiDraftResult(draft, questions);
     }
+
+    public AssistantChatResponse chatWithAssistant(AssistantChatRequest request) {
+        String role = request.currentRole() != null && !request.currentRole().isBlank()
+                ? request.currentRole().trim()
+                : "Candidate";
+
+        String systemInstruction = String.format("""
+                You are "ForgeAI", an elite, supportive AI resume and career co-pilot powered by Google Gemini.
+                The candidate is crafting or refining their resume targeting the role: "%s".
+
+                Your job:
+                1. Answer questions clearly with ATS-optimized resume advice.
+                2. Suggest or rewrite metric-driven accomplishment bullets using the STAR method.
+                3. Recommend high-value keywords, technologies, and certifications.
+                4. Keep responses concise, practical, engaging, and formatted in clean GitHub-style Markdown.
+                5. Highlight sample bullet points or snippets that the user can directly copy and paste into their resume.
+                """, role);
+
+        StringBuilder prompt = new StringBuilder();
+        if (request.contextSnippet() != null && !request.contextSnippet().isBlank()) {
+            prompt.append("CURRENT RESUME CONTEXT / DRAFT:\n")
+                    .append(request.contextSnippet().trim()).append("\n\n");
+        }
+        if (request.history() != null && !request.history().isEmpty()) {
+            prompt.append("CONVERSATION HISTORY:\n");
+            for (var msg : request.history()) {
+                if (msg != null && msg.text() != null && !msg.text().isBlank()) {
+                    String sender = "user".equalsIgnoreCase(msg.role()) ? "Candidate" : "ForgeAI";
+                    prompt.append(sender).append(": ").append(msg.text().trim()).append("\n");
+                }
+            }
+            prompt.append("\n");
+        }
+        prompt.append("CANDIDATE QUESTION / REQUEST:\n").append(request.message().trim());
+
+        try {
+            String reply = geminiClient.generateText(systemInstruction, prompt.toString());
+            List<String> suggestions = List.of(
+                    "Can you suggest 3 strong bullets for my experience?",
+                    "What ATS keywords am I missing?",
+                    "How can I quantify my achievements?"
+            );
+            return new AssistantChatResponse(reply, suggestions, "gemini");
+        } catch (Exception e) {
+            log.warn("Gemini assistant chat failed: {}. Falling back to smart assistant response.", e.getMessage());
+            String fallback = String.format("""
+                    ### ATS Tip for %s
+                    Focus on **quantifiable business impact** using the STAR framework:
+                    - **Action Verb**: Begin with *Architected*, *Spearheaded*, *Engineered*, or *Streamlined*.
+                    - **Metric**: Include numbers (e.g., *improved latency by 35%%*, *scaled to 50k DAU*, *reduced build times by 12 mins*).
+                    - **Tech Stack**: Explicitly name the tools and libraries you used.
+                    """, role);
+            return new AssistantChatResponse(fallback, List.of(
+                    "Give me an example bullet for " + role,
+                    "How to write a punchy 50-word summary"
+            ), "fallback");
+        }
+    }
 }

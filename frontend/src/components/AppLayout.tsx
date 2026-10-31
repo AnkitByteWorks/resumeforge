@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router'
 import { useAuth } from '../auth/auth-context'
 import { ThemeToggle } from './ThemeToggle'
 import { HeroBubbles } from './HeroBubbles'
+import { GeminiAssistantWidget } from './GeminiAssistantWidget'
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth()
@@ -43,6 +44,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <main className="relative z-10 flex-1 w-full max-w-6xl mx-auto p-6">
         {children}
       </main>
+
+      {/* Interactive Gemini AI Co-Pilot Widget */}
+      <GeminiAssistantWidget />
     </div>
   )
 }

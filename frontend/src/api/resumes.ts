@@ -97,3 +97,28 @@ export function saveResume(draft: ResumeDraft): Promise<SavedResume> {
 export function downloadPdf(id: string): Promise<Blob> {
   return apiBlob(`/api/v1/resumes/${id}/pdf`)
 }
+
+export type AssistantMessage = {
+  role: 'user' | 'assistant'
+  text: string
+}
+
+export type AssistantChatParams = {
+  message: string
+  history?: AssistantMessage[]
+  currentRole?: string
+  contextSnippet?: string
+}
+
+export type AssistantChatResponse = {
+  reply: string
+  suggestedFollowUps: string[]
+  modelUsed: string
+}
+
+export function chatWithAssistant(params: AssistantChatParams): Promise<AssistantChatResponse> {
+  return api<AssistantChatResponse>('/api/v1/ai/chat', {
+    method: 'POST',
+    body: params,
+  })
+}

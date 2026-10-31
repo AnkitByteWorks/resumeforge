@@ -33,9 +33,9 @@ public class GeminiClient {
     public GeminiClient(@Value("${gemini.api-key:}") String apiKey,
                         @Value("${gemini.models}") String modelsCsv,
                         @Value("${gemini.base-url}") String baseUrl) {
-        var http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+        var http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
         var factory = new JdkClientHttpRequestFactory(http);
-        factory.setReadTimeout(Duration.ofSeconds(90));
+        factory.setReadTimeout(Duration.ofSeconds(20));
         this.rest = RestClient.builder().baseUrl(baseUrl).requestFactory(factory).build();
         this.apiKey = apiKey;
         this.models = Arrays.stream(modelsCsv.split(","))
@@ -79,6 +79,36 @@ public class GeminiClient {
         throw lastError;
     }
 
+    /** Tries each configured model in order for free-form text responses. */
+    public String generateText(String systemInstruction, String userContent) {
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new AiUnavailableException("AI is not configured on the server (GEMINI_API_KEY is missing).");
+        }
+
+        Map<String, Object> body = Map.of(
+                "systemInstruction", Map.of("parts", List.of(Map.of("text", systemInstruction))),
+                "contents", List.of(Map.of("role", "user", "parts", List.of(Map.of("text", userContent)))),
+                "generationConfig", Map.of("maxOutputTokens", 2048));
+
+        AiUnavailableException lastError = null;
+        for (int i = 0; i < models.size(); i++) {
+            String model = models.get(i);
+            try {
+                String result = callModelForText(model, body);
+                if (i > 0) {
+                    log.info("Gemini fallback model '{}' was used for text", model);
+                }
+                return result;
+            } catch (AiUnavailableException e) {
+                lastError = e;
+                boolean hasNext = i < models.size() - 1;
+                log.warn("Gemini model '{}' failed: {}{}", model, e.getMessage(),
+                        hasNext ? " (trying next model)" : " (no more models)");
+            }
+        }
+        throw lastError;
+    }
+
     private <T> T callModel(String model, Map<String, Object> body, Class<T> type) {
         GeminiResponse response;
         try {
@@ -92,13 +122,17 @@ public class GeminiClient {
         } catch (RestClientResponseException e) {
             log.warn("Gemini '{}' returned HTTP {}: {}", model, e.getStatusCode().value(),
                     e.getResponseBodyAsString());
-            if (e.getStatusCode().value() == 429) {
-                throw new AiUnavailableException("The AI service is busy. Please try again in a minute.");
+            int code = e.getStatusCode().value();
+            if (code == 429) {
+                throw new AiUnavailableException("The AI service is busy (HTTP 429).");
+            } else if (code == 503) {
+                throw new AiUnavailableException("The AI service is temporarily experiencing high demand (HTTP 503).");
+            } else if (code == 404) {
+                throw new AiUnavailableException("The AI model '" + model + "' is not found or deprecated (HTTP 404).");
             }
-            throw new AiUnavailableException("The AI service rejected the request (HTTP "
-                    + e.getStatusCode().value() + ").");
+            throw new AiUnavailableException("The AI service rejected the request (HTTP " + code + ").");
         } catch (RestClientException e) {
-            throw new AiUnavailableException("Could not reach the AI service. Please try again.");
+            throw new AiUnavailableException("Could not reach the AI service (" + e.getMessage() + ").");
         }
 
         String text = extractText(response);
@@ -110,6 +144,39 @@ public class GeminiClient {
         } catch (Exception e) {
             throw new AiUnavailableException("The AI returned an invalid result. Please try again.");
         }
+    }
+
+    private String callModelForText(String model, Map<String, Object> body) {
+        GeminiResponse response;
+        try {
+            response = rest.post()
+                    .uri("/models/{model}:generateContent", model)
+                    .header("x-goog-api-key", apiKey)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(body)
+                    .retrieve()
+                    .body(GeminiResponse.class);
+        } catch (RestClientResponseException e) {
+            log.warn("Gemini '{}' returned HTTP {}: {}", model, e.getStatusCode().value(),
+                    e.getResponseBodyAsString());
+            int code = e.getStatusCode().value();
+            if (code == 429) {
+                throw new AiUnavailableException("The AI service is busy (HTTP 429).");
+            } else if (code == 503) {
+                throw new AiUnavailableException("The AI service is temporarily experiencing high demand (HTTP 503).");
+            } else if (code == 404) {
+                throw new AiUnavailableException("The AI model '" + model + "' is not found or deprecated (HTTP 404).");
+            }
+            throw new AiUnavailableException("The AI service rejected the request (HTTP " + code + ").");
+        } catch (RestClientException e) {
+            throw new AiUnavailableException("Could not reach the AI service (" + e.getMessage() + ").");
+        }
+
+        String text = extractText(response);
+        if (text == null || text.isBlank()) {
+            throw new AiUnavailableException("The AI returned no text.");
+        }
+        return text;
     }
 
     private static String extractText(GeminiResponse r) {

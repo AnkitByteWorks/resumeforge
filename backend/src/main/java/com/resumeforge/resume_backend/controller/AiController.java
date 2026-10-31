@@ -38,6 +38,11 @@ public class AiController {
         return aiResumeService.refineDraft(request);
     }
 
+    @PostMapping("/chat")
+    public AssistantChatResponse chatWithAssistant(@Valid @RequestBody AssistantChatRequest request) {
+        return aiResumeService.chatWithAssistant(request);
+    }
+
     @PostMapping("/resumes/{id}/tailor")
     public TailorResumeResponse tailorResume(
             @CurrentUserId String userId,
