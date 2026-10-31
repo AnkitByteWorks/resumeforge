@@ -23,20 +23,35 @@ const TEMPLATE_OPTIONS: Array<{
   id: string
   name: string
   color: string
-  category: 'ATS Standard' | 'Photo & Creative' | 'Split Layout'
+  category: 'ATS Standard' | 'Photo & Creative' | 'Split Layout' | 'Modern Minimalist'
   hasPhoto: boolean
   desc: string
 }> = [
+  // User Reference Templates (Exact to exact matches)
+  { id: 'foundation-purple', name: 'Foundation Purple', color: '#4a2c82', category: 'Photo & Creative', hasPhoto: true, desc: 'Purple banner box, circular headshot, skills & interests badges (2.foundation)' },
+  { id: 'split-navy', name: 'Navy Split Sidebar', color: '#1e3a8a', category: 'Split Layout', hasPhoto: false, desc: 'Deep solid navy right sidebar with white text & left timeline (Mark Griffin)' },
+  { id: 'austin-yellow', name: 'Austin Highlighter', color: '#facc15', category: 'Photo & Creative', hasPhoto: true, desc: 'Pitch-black sidebar with photo & vibrant yellow highlighter name (Austin Bronson)' },
+  { id: 'minimalist-bennett', name: 'Bennett Minimalist', color: '#27272a', category: 'ATS Standard', hasPhoto: false, desc: 'Ultra-clean monochrome ATS with horizontal dividers & bottom bar (Sebastian Bennett)' },
+  { id: 'botanical-bale', name: 'Botanical Green', color: '#164e63', category: 'Photo & Creative', hasPhoto: true, desc: 'Dark botanical green left border accent with top-right headshot (Catherine Bale)' },
+  { id: 'mint-franklin', name: 'Franklin Mint', color: '#059669', category: 'ATS Standard', hasPhoto: false, desc: 'Single-column ATS with pastel mint green banner strips (Philip Franklin)' },
+  { id: 'creative-watson', name: 'Watson Creative', color: '#ea580c', category: 'Photo & Creative', hasPhoto: true, desc: 'Orange & teal geometric outer border frame with photo & icon badges (Sarah Watson)' },
+  { id: 'editorial-smith', name: 'Jane Editorial', color: '#09090b', category: 'Modern Minimalist', hasPhoto: false, desc: 'Warm cream background, bold "Hello! I am..." header & thick rules (Jane Smith)' },
+  { id: 'coral-koe', name: 'Nick Coral', color: '#f87171', category: 'Photo & Creative', hasPhoto: true, desc: 'Coral framed circular headshot, coral job accents & soft blue pills (Nick Koe)' },
+  { id: 'executive-parvati', name: 'Parvati Bordered', color: '#18181b', category: 'ATS Standard', hasPhoto: false, desc: 'Full-page thin border box, centered uppercase & inline 2-col dates (Anaisha Parvati)' },
+  { id: 'sky-warner', name: 'Emaa Sky Blue', color: '#0284c7', category: 'Photo & Creative', hasPhoto: true, desc: 'Pastel sky-blue geometric header block with circular photo & dark footer (Emaa Warner)' },
+  { id: 'teal-timeline', name: 'Natalie Timeline', color: '#0d9488', category: 'Photo & Creative', hasPhoto: true, desc: 'Dark teal sidebar, white photo frame, teal badge pills & timeline dots (Natalie Edwards)' },
+  { id: 'nordic-earnshaw', name: 'Nordic Taupe', color: '#78716c', category: 'Photo & Creative', hasPhoto: true, desc: 'Warm beige/taupe sidebar with rectangular photo & editorial typography (Catherine Earnshaw)' },
+  { id: 'sage-ramanathan', name: 'Priya Sage', color: '#4a7048', category: 'Photo & Creative', hasPhoto: true, desc: 'Sage green circular icon badges & solid sage rounded banner headers (Priya Ramanathan)' },
+  { id: 'slate-alvarado', name: 'Lorna Slate', color: '#2563eb', category: 'Photo & Creative', hasPhoto: true, desc: 'Diagonal slate-blue header with circular photo & timeline node dots (Lorna Alvarado)' },
+  { id: 'seafoam-smith', name: 'Nelly Seafoam', color: '#0f5132', category: 'Modern Minimalist', hasPhoto: false, desc: 'Seafoam green name box, 3-column contact/summary/skills & banner strips (Nelly Smith)' },
+
+  // Classic ATS Formats
   { id: 'modern-02', name: 'Modern Navy', color: '#1f4e79', category: 'ATS Standard', hasPhoto: false, desc: 'Sans-serif with deep blue accent lines, high ATS score' },
   { id: 'classic-01', name: 'Classic Serif', color: '#111827', category: 'ATS Standard', hasPhoto: false, desc: 'Traditional centered serif, monochrome ATS standard' },
   { id: 'emerald-03', name: 'Executive Emerald', color: '#047857', category: 'ATS Standard', hasPhoto: false, desc: 'Crisp structure with forest emerald accents' },
   { id: 'slate-04', name: 'Minimalist Slate', color: '#334155', category: 'ATS Standard', hasPhoto: false, desc: 'Airy minimalist typography in charcoal slate' },
   { id: 'violet-05', name: 'Tech Violet', color: '#6d28d9', category: 'ATS Standard', hasPhoto: false, desc: 'Startup tech aesthetic with electric purple' },
   { id: 'crimson-06', name: 'Ruby Crimson', color: '#9f1239', category: 'ATS Standard', hasPhoto: false, desc: 'Distinguished burgundy accents for impact' },
-  { id: 'photo-sidebar-01', name: 'Foundation Purple', color: '#7c3aed', category: 'Photo & Creative', hasPhoto: true, desc: '2-column layout with circular headshot & left skills sidebar' },
-  { id: 'photo-executive-02', name: 'Executive Emerald', color: '#059669', category: 'Photo & Creative', hasPhoto: true, desc: 'Clean split layout with avatar badge & timeline highlights' },
-  { id: 'photo-nordic-03', name: 'Nordic Headshot', color: '#78716c', category: 'Photo & Creative', hasPhoto: true, desc: 'Minimalist warm beige sidebar with framed headshot' },
-  { id: 'split-navy-04', name: 'Navy Split Accent', color: '#0f172a', category: 'Split Layout', hasPhoto: false, desc: 'Deep navy right sidebar with white text, bold geometry' },
 ]
 
 export function CreateResumePage() {
@@ -58,7 +73,7 @@ export function CreateResumePage() {
 
   // Step 3 State (Editor & Preview)
   const [activeTab, setActiveTab] = useState('template')
-  const [templateFilter, setTemplateFilter] = useState<'All' | 'ATS Standard' | 'Photo & Creative' | 'Split Layout'>('All')
+  const [templateFilter, setTemplateFilter] = useState<'All' | 'ATS Standard' | 'Photo & Creative' | 'Split Layout' | 'Modern Minimalist'>('All')
   const [previewHtmlString, setPreviewHtmlString] = useState('')
   const [isPreviewLoading, setIsPreviewLoading] = useState(false)
   const [previewError, setPreviewError] = useState<string | null>(null)
@@ -568,7 +583,7 @@ export function CreateResumePage() {
 
                         {/* Category filter tabs */}
                         <div className="flex flex-wrap gap-1.5 pb-1">
-                          {(['All', 'ATS Standard', 'Photo & Creative', 'Split Layout'] as const).map((cat) => (
+                          {(['All', 'ATS Standard', 'Photo & Creative', 'Split Layout', 'Modern Minimalist'] as const).map((cat) => (
                             <button
                               key={cat}
                               type="button"

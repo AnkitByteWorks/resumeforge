@@ -1,0 +1,14 @@
+@page {
+  size: A4;
+  margin: 12mm 15mm;
+}
+body {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  color: #18181b;
+  margin: 0;
+  padding: 0;
+  background-color: #ffffff;
+}
+ul {
+  padding-left: 14pt;
+}

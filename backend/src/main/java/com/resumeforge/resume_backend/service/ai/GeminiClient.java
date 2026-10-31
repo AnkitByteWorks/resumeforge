@@ -123,7 +123,9 @@ public class GeminiClient {
             log.warn("Gemini '{}' returned HTTP {}: {}", model, e.getStatusCode().value(),
                     e.getResponseBodyAsString());
             int code = e.getStatusCode().value();
-            if (code == 429) {
+            if (code == 401) {
+                throw new AiUnavailableException("Invalid Gemini API Key (HTTP 401). Please verify that GEMINI_API_KEY is a valid Google AI Studio key starting with 'AIzaSy...'.");
+            } else if (code == 429) {
                 throw new AiUnavailableException("The AI service is busy (HTTP 429).");
             } else if (code == 503) {
                 throw new AiUnavailableException("The AI service is temporarily experiencing high demand (HTTP 503).");
@@ -160,7 +162,9 @@ public class GeminiClient {
             log.warn("Gemini '{}' returned HTTP {}: {}", model, e.getStatusCode().value(),
                     e.getResponseBodyAsString());
             int code = e.getStatusCode().value();
-            if (code == 429) {
+            if (code == 401) {
+                throw new AiUnavailableException("Invalid Gemini API Key (HTTP 401). Please verify that GEMINI_API_KEY is a valid Google AI Studio key starting with 'AIzaSy...'.");
+            } else if (code == 429) {
                 throw new AiUnavailableException("The AI service is busy (HTTP 429).");
             } else if (code == 503) {
                 throw new AiUnavailableException("The AI service is temporarily experiencing high demand (HTTP 503).");

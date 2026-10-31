@@ -1,0 +1,14 @@
+@page {
+  size: A4;
+  margin: 0;
+}
+body {
+  font-family: 'Georgia', serif;
+  color: #1c1917;
+  margin: 0;
+  padding: 0;
+  background-color: #ffffff;
+}
+ul {
+  padding-left: 12pt;
+}

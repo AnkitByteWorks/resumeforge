@@ -1,0 +1,14 @@
+@page {
+  size: A4;
+  margin: 0;
+}
+body {
+  font-family: 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
+  color: #18181b;
+  margin: 0;
+  padding: 0;
+  background-color: #ffffff;
+}
+ul {
+  padding-left: 12pt;
+}

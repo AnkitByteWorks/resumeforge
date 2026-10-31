@@ -29,7 +29,7 @@ public class ResumeRenderService {
         ctx.setVariable("resume", resume);
         ctx.setVariable("contacts", contacts(resume != null ? resume.getPersonalInfo() : null));
         ctx.setVariable("css", loadCss(id));
-        String view = registry.isTwoColumn(id) ? "resume/resume-twocolumn" : "resume/resume";
+        String view = registry.getViewName(id);
         return engine.process(view, ctx);
     }
 
