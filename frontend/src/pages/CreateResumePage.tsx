@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { AppLayout } from '../components/AppLayout'
 import { generateDraft, refineDraft, previewHtml, saveResume } from '../api/resumes'
@@ -37,10 +37,12 @@ export function CreateResumePage() {
   const [activeTab, setActiveTab] = useState('experience')
   const [previewHtmlString, setPreviewHtmlString] = useState('')
   const [isPreviewLoading, setIsPreviewLoading] = useState(false)
+  const [previewError, setPreviewError] = useState<string | null>(null)
 
   // --- PREVIEW HANDLER ---
   const updatePreview = async (currentDraft: ResumeDraft) => {
     setIsPreviewLoading(true)
+    setPreviewError(null)
     try {
       const cleaned = cleanDraft(currentDraft)
       const html = await previewHtml(cleaned)
@@ -61,10 +63,19 @@ export function CreateResumePage() {
       setPreviewHtmlString(styledHtml)
     } catch (err: unknown) {
       console.error('Preview error', err)
+      const msg = err instanceof Error ? err.message : 'Failed to generate live preview'
+      setPreviewError(msg)
     } finally {
       setIsPreviewLoading(false)
     }
   }
+
+  // Ensure preview is generated when entering Step 3
+  useEffect(() => {
+    if (currentStep === 3 && draft && !previewHtmlString && !isPreviewLoading && !previewError) {
+      void updatePreview(draft)
+    }
+  }, [currentStep, draft, previewHtmlString, isPreviewLoading, previewError])
 
   // --- API HANDLERS ---
   const handleGenerate = async () => {
@@ -573,9 +584,21 @@ export function CreateResumePage() {
               className="w-full h-full border-0 bg-white"
               title="Resume Preview"
             />
+          ) : previewError ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-zinc-600">
+              <p className="text-sm text-red-500 mb-3">{previewError}</p>
+              <button
+                type="button"
+                onClick={() => draft && void updatePreview(draft)}
+                className="px-4 py-2 text-xs font-medium bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg transition-colors cursor-pointer"
+              >
+                Retry Preview
+              </button>
+            </div>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-zinc-400">
-              Generating preview...
+            <div className="flex-1 flex flex-col items-center justify-center text-zinc-400 gap-2">
+              <div className="w-5 h-5 border-2 border-[#84cc16] border-t-transparent rounded-full animate-spin" />
+              <span className="text-xs">Generating preview...</span>
             </div>
           )}
         </div>

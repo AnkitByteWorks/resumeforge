@@ -23,13 +23,11 @@ public class ResumeRenderService {
     private final TemplateRegistry registry;
 
     public String renderHtml(Resume resume) {
-        String id = resume.getTemplateId();
-        if (!registry.exists(id)) {
-            throw new ResourceNotFoundException("Unknown template: " + id);
-        }
+        String templateId = resume != null ? resume.getTemplateId() : null;
+        String id = registry.resolve(templateId);
         Context ctx = new Context();
         ctx.setVariable("resume", resume);
-        ctx.setVariable("contacts", contacts(resume.getPersonalInfo()));
+        ctx.setVariable("contacts", contacts(resume != null ? resume.getPersonalInfo() : null));
         ctx.setVariable("css", loadCss(id));
         return engine.process("resume/resume", ctx);
     }
@@ -49,6 +47,7 @@ public class ResumeRenderService {
     }
 
     private List<String> contacts(Resume.PersonalInfo p) {
+        if (p == null) return List.of();
         return Stream.of(p.email(), p.phone(), p.location(), p.linkedin(), p.github(), p.portfolio())
                 .filter(s -> s != null && !s.isBlank())
                 .toList();

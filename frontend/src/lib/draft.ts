@@ -5,9 +5,18 @@ const cleanList = (items: string[] | null | undefined) =>
   (items ?? []).map(trim).filter(s => s !== '')
 
 export function cleanDraft(d: ResumeDraft): ResumeDraft {
-  const p = d.personalInfo
+  const p = d.personalInfo || {
+    fullName: '',
+    email: '',
+    phone: '',
+    location: '',
+    linkedin: '',
+    github: '',
+    portfolio: '',
+  }
   return {
     ...d,
+    templateId: d.templateId || 'modern-02',
     title: trim(d.title) || `${trim(p.fullName) || 'My'} Resume`,
     summary: trim(d.summary),
     personalInfo: {
