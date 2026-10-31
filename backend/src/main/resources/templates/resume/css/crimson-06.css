@@ -1,0 +1,11 @@
+@page { size: A4; margin: 14mm 16mm; }
+body { font-family: 'Georgia', serif; font-size: 10pt; color: #1c1917; line-height: 1.35; }
+p { margin: 0; }
+h1.name { font-size: 23pt; color: #9f1239; margin: 0 0 3pt 0; font-weight: 700; letter-spacing: -0.3px; }
+p.contact { font-size: 9pt; color: #57534e; margin-bottom: 8pt; font-style: italic; }
+h2 { font-size: 11pt; color: #9f1239; text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 1.5px solid #be123c; margin: 12pt 0 4pt 0; padding-bottom: 2pt; font-family: -apple-system, sans-serif; font-weight: 600; }
+.entry { margin-bottom: 6pt; page-break-inside: avoid; }
+.entry-title { font-weight: bold; color: #0c0a09; }
+.entry-meta { color: #57534e; font-size: 9pt; }
+ul { margin: 3pt 0 0 0; padding-left: 14pt; }
+li { margin-bottom: 1.5pt; color: #292524; }

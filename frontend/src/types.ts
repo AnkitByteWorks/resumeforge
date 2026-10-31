@@ -16,6 +16,7 @@ export interface ResumeSummary {
   title: string
   templateId: string
   updatedAt: string | null
+  atsScore?: number
 }
 
 export interface TemplateInfo {

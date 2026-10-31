@@ -5,6 +5,7 @@ import com.resumeforge.resume_backend.dto.ResumeResponse;
 import com.resumeforge.resume_backend.exception.ResourceNotFoundException;
 import com.resumeforge.resume_backend.model.Resume;
 import com.resumeforge.resume_backend.repository.ResumeRepository;
+import com.resumeforge.resume_backend.service.ats.AtsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +16,7 @@ import java.util.List;
 public class ResumeService {
 
     private final ResumeRepository repository;
+    private final AtsService atsService;
 
     public ResumeResponse create(String userId, ResumeRequest req) {
         Resume resume = new Resume();
@@ -25,7 +27,16 @@ public class ResumeService {
 
     public List<ResumeResponse> list(String userId) {
         return repository.findByUserIdOrderByUpdatedAtDesc(userId)
-                .stream().map(ResumeResponse::from).toList();
+                .stream().map(r -> {
+                    if (r.getAtsScore() == null) {
+                        try {
+                            r.setAtsScore(atsService.analyze(r, null).score());
+                        } catch (Exception ignored) {
+                            r.setAtsScore(80);
+                        }
+                    }
+                    return ResumeResponse.from(r);
+                }).toList();
     }
 
     public ResumeResponse get(String userId, String id) {
@@ -65,6 +76,13 @@ public class ResumeService {
                         e.startDate(), e.endDate(), e.score())).toList());
         r.setSkills(orEmpty(q.skills()));
         r.setCertifications(orEmpty(q.certifications()));
+        try {
+            r.setAtsScore(atsService.analyze(r, null).score());
+        } catch (Exception ignored) {
+            if (r.getAtsScore() == null) {
+                r.setAtsScore(80);
+            }
+        }
     }
 
     private static <T> List<T> orEmpty(List<T> list) {

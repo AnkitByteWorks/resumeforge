@@ -153,14 +153,18 @@ export function DashboardPage() {
                 </div>
 
                 {/* ATS Score Badge */}
-                <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-md">
                   <div
                     className={`w-2 h-2 rounded-full ${
-                      resume.atsScore && resume.atsScore > 80 ? 'bg-[#84cc16]' : 'bg-amber-400'
+                      (resume.atsScore ?? 0) >= 80
+                        ? 'bg-[#84cc16]'
+                        : (resume.atsScore ?? 0) >= 60
+                          ? 'bg-amber-400'
+                          : 'bg-rose-400'
                     }`}
                   />
                   <span className="text-xs font-semibold text-white">
-                    ATS {resume.atsScore || 0}%
+                    ATS {resume.atsScore ?? 0}%
                   </span>
                 </div>
               </div>

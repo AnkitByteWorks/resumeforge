@@ -19,6 +19,15 @@ const SAMPLE_CHIPS = [
   'Data Scientist',
 ]
 
+const TEMPLATE_OPTIONS = [
+  { id: 'modern-02', name: 'Modern Navy', color: '#1f4e79', desc: 'Sans-serif with deep blue accent lines' },
+  { id: 'emerald-03', name: 'Executive Emerald', color: '#047857', desc: 'Crisp structure with forest emerald accents' },
+  { id: 'violet-05', name: 'Tech Violet', color: '#6d28d9', desc: 'Startup tech aesthetic with electric purple' },
+  { id: 'crimson-06', name: 'Ruby Crimson', color: '#9f1239', desc: 'Distinguished burgundy accents for impact' },
+  { id: 'slate-04', name: 'Minimalist Slate', color: '#334155', desc: 'Airy minimalist typography in charcoal slate' },
+  { id: 'classic-01', name: 'Classic Serif', color: '#000000', desc: 'Traditional centered serif, monochrome ATS' },
+]
+
 export function CreateResumePage() {
   const navigate = useNavigate()
   const [currentStep, setCurrentStep] = useState(1)
@@ -356,7 +365,7 @@ export function CreateResumePage() {
           </div>
 
           {/* Accordions */}
-          {['Personal Info', 'Experience', 'Education', 'Skills'].map((section) => {
+          {['Template & Style', 'Personal Info', 'Experience', 'Education', 'Skills'].map((section) => {
             const tabKey = section.toLowerCase().split(' ')[0]
             const isActive = activeTab === tabKey
             return (
@@ -382,6 +391,47 @@ export function CreateResumePage() {
 
                 {isActive && (
                   <div className="p-4 border-t border-white/5 bg-black/20">
+                    {section === 'Template & Style' && (
+                      <div className="space-y-3">
+                        <p className="text-xs text-zinc-400">
+                          Select a design &amp; color theme. Live preview reflects your choice immediately.
+                        </p>
+                        <div className="grid grid-cols-2 gap-2.5">
+                          {TEMPLATE_OPTIONS.map((t) => {
+                            const isSelected =
+                              draft.templateId === t.id ||
+                              (t.id === 'modern-02' && (!draft.templateId || draft.templateId === 'modern'))
+                            return (
+                              <button
+                                key={t.id}
+                                type="button"
+                                onClick={() => handleDraftChange({ ...draft, templateId: t.id })}
+                                className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                                  isSelected
+                                    ? 'bg-white/10 border-[#84cc16] shadow-[0_0_15px_rgba(132,204,22,0.15)] ring-1 ring-[#84cc16]'
+                                    : 'bg-white/[0.03] border-white/10 hover:border-white/20 hover:bg-white/[0.06]'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between mb-1.5">
+                                  <div className="flex items-center gap-2">
+                                    <span
+                                      className="w-3.5 h-3.5 rounded-full border border-white/20 shadow-sm"
+                                      style={{ backgroundColor: t.color }}
+                                    />
+                                    <span className="font-semibold text-xs text-white">{t.name}</span>
+                                  </div>
+                                  {isSelected && (
+                                    <span className="text-[#84cc16] font-bold text-xs">✓ Active</span>
+                                  )}
+                                </div>
+                                <p className="text-[11px] text-zinc-400 leading-tight">{t.desc}</p>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
                     {section === 'Personal Info' && (
                       <div className="space-y-3">
                         <div>

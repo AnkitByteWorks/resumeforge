@@ -32,6 +32,7 @@ public class Resume {
     private List<Education> education = new ArrayList<>();
     private List<String> skills = new ArrayList<>();
     private List<String> certifications = new ArrayList<>();
+    private Integer atsScore;
 
     @CreatedDate
     private Instant createdAt;

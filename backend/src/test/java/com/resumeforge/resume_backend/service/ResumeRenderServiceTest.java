@@ -59,9 +59,13 @@ class ResumeRenderServiceTest {
 
     @Test
     void testTemplateRegistry() {
-        assertEquals(2, registry.all().size());
+        assertEquals(6, registry.all().size());
         assertTrue(registry.exists("classic-01"));
         assertTrue(registry.exists("modern-02"));
+        assertTrue(registry.exists("emerald-03"));
+        assertTrue(registry.exists("slate-04"));
+        assertTrue(registry.exists("violet-05"));
+        assertTrue(registry.exists("crimson-06"));
         assertFalse(registry.exists("unknown-99"));
     }
 }

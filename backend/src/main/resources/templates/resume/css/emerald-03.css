@@ -1,0 +1,11 @@
+@page { size: A4; margin: 14mm 16mm; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; font-size: 10pt; color: #1e293b; line-height: 1.38; }
+p { margin: 0; }
+h1.name { font-size: 24pt; color: #047857; margin: 0 0 3pt 0; font-weight: 700; letter-spacing: -0.5px; }
+p.contact { font-size: 9pt; color: #475569; margin-bottom: 8pt; font-weight: 500; }
+h2 { font-size: 11pt; color: #047857; text-transform: uppercase; letter-spacing: 1.2px; border-bottom: 2px solid #059669; margin: 12pt 0 4pt 0; padding-bottom: 2pt; font-weight: 600; }
+.entry { margin-bottom: 6pt; page-break-inside: avoid; }
+.entry-title { font-weight: 600; color: #0f172a; }
+.entry-meta { color: #64748b; font-size: 9pt; }
+ul { margin: 3pt 0 0 0; padding-left: 14pt; }
+li { margin-bottom: 1.5pt; color: #334155; }

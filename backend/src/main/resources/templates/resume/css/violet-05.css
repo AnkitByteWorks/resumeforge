@@ -1,0 +1,11 @@
+@page { size: A4; margin: 14mm 16mm; }
+body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 10pt; color: #1e1b4b; line-height: 1.35; }
+p { margin: 0; }
+h1.name { font-size: 24pt; color: #6d28d9; margin: 0 0 3pt 0; font-weight: 700; }
+p.contact { font-size: 9pt; color: #6b7280; margin-bottom: 8pt; }
+h2 { font-size: 11pt; color: #6d28d9; text-transform: uppercase; letter-spacing: 1.2px; border-bottom: 2px solid #8b5cf6; margin: 12pt 0 4pt 0; padding-bottom: 2pt; font-weight: 700; }
+.entry { margin-bottom: 6pt; page-break-inside: avoid; }
+.entry-title { font-weight: 600; color: #111827; }
+.entry-meta { color: #4b5563; font-size: 9pt; }
+ul { margin: 3pt 0 0 0; padding-left: 14pt; }
+li { margin-bottom: 1.5pt; color: #374151; }
