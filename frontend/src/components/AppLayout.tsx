@@ -15,12 +15,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#09090b] text-white flex flex-col relative overflow-hidden">
+    <div className="min-h-screen w-full bg-[#09090b] text-white flex flex-col relative overflow-x-hidden">
       {/* Toned-down bubbles for the app interior */}
       <HeroBubbles variant="app" />
 
       {/* Top Navigation */}
-      <header className="relative z-20 w-full px-6 py-4 flex items-center justify-between border-b border-white/5 bg-[#09090b]/50 backdrop-blur-md">
+      <header className="relative z-20 w-full px-6 py-3.5 flex items-center justify-between border-b border-white/5 bg-[#09090b]/50 backdrop-blur-md shrink-0">
         <Link to="/dashboard" className="text-xl font-bold tracking-tighter text-white">
           Resume<span className="text-[#84cc16]">Forge</span>
         </Link>
@@ -41,7 +41,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       </header>
 
       {/* Main Content Area */}
-      <main className="relative z-10 flex-1 w-full max-w-6xl mx-auto p-6">
+      <main className="relative z-10 flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-col min-h-0">
         {children}
       </main>
 

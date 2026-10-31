@@ -533,9 +533,9 @@ export function CreateResumePage() {
     }
 
     return (
-      <div className="animate-in fade-in slide-in-from-right-8 duration-500 h-[calc(100vh-140px)] flex gap-6">
+      <div className="animate-in fade-in slide-in-from-right-8 duration-500 flex-1 flex gap-6 min-h-0 h-[calc(100vh-105px)] max-h-[calc(100vh-105px)]">
         {/* Left Side: Editor */}
-        <div className="w-1/2 flex flex-col gap-4 overflow-y-auto pr-2 pb-10 custom-scrollbar">
+        <div className="w-1/2 flex flex-col gap-4 overflow-y-auto pr-2 pb-24 min-h-0 custom-scrollbar">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-2xl font-medium text-white">Editor</h2>
             <button
@@ -607,7 +607,7 @@ export function CreateResumePage() {
                             </div>
                           )}
 
-                        <div className="grid grid-cols-2 gap-2.5">
+                        <div className="grid grid-cols-2 gap-2.5 max-h-[380px] overflow-y-auto pr-1.5 custom-scrollbar">
                           {TEMPLATE_OPTIONS.filter(
                             (t) => templateFilter === 'All' || t.category === templateFilter,
                           ).map((t) => {
@@ -619,7 +619,7 @@ export function CreateResumePage() {
                                 key={t.id}
                                 type="button"
                                 onClick={() => handleDraftChange({ ...draft, templateId: t.id })}
-                                className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                                className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-1.5 min-h-[92px] ${
                                   isSelected
                                     ? 'bg-white/10 border-[#84cc16] shadow-[0_0_15px_rgba(132,204,22,0.15)] ring-1 ring-[#84cc16]'
                                     : 'bg-white/[0.03] border-white/10 hover:border-white/20 hover:bg-white/[0.06]'
@@ -627,31 +627,31 @@ export function CreateResumePage() {
                               >
                                 <div>
                                   <div className="flex items-center justify-between mb-1">
-                                    <div className="flex items-center gap-1.5">
+                                    <div className="flex items-center gap-1.5 min-w-0">
                                       <span
                                         className="w-3 h-3 rounded-full border border-white/20 shrink-0"
                                         style={{ backgroundColor: t.color }}
                                       />
-                                      <span className="font-semibold text-xs text-white leading-tight">
+                                      <span className="font-semibold text-xs text-white leading-tight truncate">
                                         {t.name}
                                       </span>
                                     </div>
                                     {isSelected && (
-                                      <span className="text-[#84cc16] font-bold text-xs shrink-0">✓</span>
+                                      <span className="text-[#84cc16] font-bold text-xs shrink-0 ml-1">✓</span>
                                     )}
                                   </div>
                                   <div className="flex items-center gap-1.5 mb-1.5">
                                     {t.hasPhoto && (
-                                      <span className="text-[10px] bg-purple-500/20 text-purple-300 px-1 rounded font-mono">
+                                      <span className="text-[10px] bg-purple-500/20 text-purple-300 px-1 rounded font-mono shrink-0">
                                         📸 Photo
                                       </span>
                                     )}
-                                    <span className="text-[10px] bg-white/5 text-zinc-400 px-1 rounded">
+                                    <span className="text-[10px] bg-white/5 text-zinc-400 px-1 rounded truncate">
                                       {t.category}
                                     </span>
                                   </div>
                                 </div>
-                                <p className="text-[11px] text-zinc-400 leading-tight">{t.desc}</p>
+                                <p className="text-[11px] text-zinc-400 leading-snug line-clamp-2 mt-auto">{t.desc}</p>
                               </button>
                             )
                           })}
@@ -1018,7 +1018,7 @@ export function CreateResumePage() {
 
   return (
     <AppLayout>
-      <div className="max-w-7xl mx-auto w-full pt-6 pb-6">
+      <div className={`max-w-7xl mx-auto w-full flex-1 flex flex-col min-h-0 ${currentStep === 3 ? 'py-0' : 'pt-6 pb-8'}`}>
         {currentStep < 3 && (
           <div className="flex items-center justify-center mb-12">
             <div className="flex items-center space-x-4">
