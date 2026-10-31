@@ -2,10 +2,12 @@ package com.resumeforge.resume_backend.controller;
 
 import com.resumeforge.resume_backend.security.CurrentUserId;
 
+import com.resumeforge.resume_backend.dto.AtsCheckDraftRequest;
 import com.resumeforge.resume_backend.dto.AtsCheckRequest;
 import com.resumeforge.resume_backend.dto.AtsReport;
 import com.resumeforge.resume_backend.model.Resume;
 import com.resumeforge.resume_backend.service.ResumeService;
+import com.resumeforge.resume_backend.service.ai.DraftMapper;
 import com.resumeforge.resume_backend.service.ats.AtsService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,5 +27,11 @@ public class AtsController {
                            @Valid @RequestBody(required = false) AtsCheckRequest body) {
         Resume resume = resumeService.getEntity(userId, id);
         return atsService.analyze(resume, body == null ? null : body.jobDescription());
+    }
+
+    @PostMapping("/draft-ats-check")
+    public AtsReport checkDraft(@Valid @RequestBody AtsCheckDraftRequest body) {
+        Resume resume = DraftMapper.toEntity(body.draft());
+        return atsService.analyze(resume, body.jobDescription());
     }
 }

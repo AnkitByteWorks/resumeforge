@@ -6,6 +6,7 @@ import com.resumeforge.resume_backend.dto.ai.*;
 import com.resumeforge.resume_backend.model.Resume;
 import com.resumeforge.resume_backend.service.ResumeService;
 import com.resumeforge.resume_backend.service.ai.AiResumeService;
+import com.resumeforge.resume_backend.service.ai.DraftMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -49,6 +50,12 @@ public class AiController {
             @PathVariable String id,
             @Valid @RequestBody TailorResumeRequest request) {
         Resume resume = resumeService.getEntity(userId, id);
+        return aiResumeService.tailorResume(resume, request.jobDescription());
+    }
+
+    @PostMapping("/tailor-draft")
+    public TailorResumeResponse tailorDraft(@Valid @RequestBody TailorDraftRequest request) {
+        Resume resume = DraftMapper.toEntity(request.draft());
         return aiResumeService.tailorResume(resume, request.jobDescription());
     }
 }

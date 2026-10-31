@@ -95,3 +95,53 @@ export interface AiAnswer {
 export interface SavedResume {
   id: string
 }
+
+export interface EnhanceBulletRequest {
+  bullet: string
+  role?: string
+  techStack?: string
+}
+
+export interface EnhanceBulletResponse {
+  originalBullet: string
+  enhancedBullet: string
+  alternativeOptions: string[]
+  actionVerbUsed: string
+  explanation: string
+  modelUsed: string
+}
+
+export interface BulletImprovement {
+  originalBullet: string
+  suggestedBullet: string
+  reason: string
+}
+
+export interface TailorResumeResponse {
+  matchedSkills: string[]
+  missingSkills: string[]
+  tailoredSummary: string
+  suggestedBulletImprovements: BulletImprovement[]
+  overallAdvice: string
+  modelUsed: string
+}
+
+export interface AtsCategoryScore {
+  name: string
+  score: number
+  maxScore: number
+  issues: string[]
+}
+
+export interface AtsReport {
+  score: number
+  grade: string
+  keywordsAnalyzed: boolean
+  categories: AtsCategoryScore[]
+  keywords?: {
+    matchPercent: number
+    matched: string[]
+    missing: string[]
+  }
+  suggestions: string[]
+}

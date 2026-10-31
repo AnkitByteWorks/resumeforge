@@ -1,5 +1,16 @@
 import { api, apiBlob, apiText } from './client'
-import type { AiAnswer, AiDraftResult, ResumeDraft, ResumeSummary, SavedResume, TemplateInfo } from '../types'
+import type {
+  AiAnswer,
+  AiDraftResult,
+  AtsReport,
+  EnhanceBulletRequest,
+  EnhanceBulletResponse,
+  ResumeDraft,
+  ResumeSummary,
+  SavedResume,
+  TailorResumeResponse,
+  TemplateInfo,
+} from '../types'
 
 const orNull = (s: string | null | undefined) => (!s || s.trim() === '' ? null : s.trim())
 
@@ -120,5 +131,26 @@ export function chatWithAssistant(params: AssistantChatParams): Promise<Assistan
   return api<AssistantChatResponse>('/api/v1/ai/chat', {
     method: 'POST',
     body: params,
+  })
+}
+
+export function enhanceBullet(params: EnhanceBulletRequest): Promise<EnhanceBulletResponse> {
+  return api<EnhanceBulletResponse>('/api/v1/ai/enhance-bullet', {
+    method: 'POST',
+    body: params,
+  })
+}
+
+export function tailorDraft(draft: ResumeDraft, jobDescription: string): Promise<TailorResumeResponse> {
+  return api<TailorResumeResponse>('/api/v1/ai/tailor-draft', {
+    method: 'POST',
+    body: { draft, jobDescription },
+  })
+}
+
+export function checkDraftAts(draft: ResumeDraft, jobDescription?: string): Promise<AtsReport> {
+  return api<AtsReport>('/api/v1/resumes/draft-ats-check', {
+    method: 'POST',
+    body: { draft, jobDescription: jobDescription || null },
   })
 }

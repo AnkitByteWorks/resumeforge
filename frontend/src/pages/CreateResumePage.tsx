@@ -1,9 +1,17 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { AppLayout } from '../components/AppLayout'
-import { generateDraft, refineDraft, previewHtml, saveResume } from '../api/resumes'
+import {
+  generateDraft,
+  refineDraft,
+  previewHtml,
+  saveResume,
+  enhanceBullet,
+  tailorDraft,
+  checkDraftAts,
+} from '../api/resumes'
 import { cleanDraft } from '../lib/draft'
-import type { ResumeDraft } from '../types'
+import type { ResumeDraft, EnhanceBulletResponse, TailorResumeResponse, AtsReport } from '../types'
 
 const STEPS = [
   { id: 1, name: 'Describe' },
@@ -77,6 +85,179 @@ export function CreateResumePage() {
   const [previewHtmlString, setPreviewHtmlString] = useState('')
   const [isPreviewLoading, setIsPreviewLoading] = useState(false)
   const [previewError, setPreviewError] = useState<string | null>(null)
+
+  // --- Step 3 Advanced Features State ---
+  // Feature 3: Section Reordering
+  const [sections, setSections] = useState<string[]>([
+    'Template & Style',
+    'Personal Info',
+    'Experience',
+    'Education',
+    'Skills',
+  ])
+
+  // Feature 2: Bullet Point AI Enhancer
+  const [enhancingBulletKey, setEnhancingBulletKey] = useState<string | null>(null)
+  const [bulletEnhancement, setBulletEnhancement] = useState<{
+    key: string
+    data: EnhanceBulletResponse
+    selectedText: string
+  } | null>(null)
+
+  // Feature 1: Job Description (JD) ATS Matcher & Auto-Tailor
+  const [isJdModalOpen, setIsJdModalOpen] = useState(false)
+  const [jdText, setJdText] = useState('')
+  const [isJdAnalyzing, setIsJdAnalyzing] = useState(false)
+  const [jdError, setJdError] = useState<string | null>(null)
+  const [atsReport, setAtsReport] = useState<AtsReport | null>(null)
+  const [tailorResult, setTailorResult] = useState<TailorResumeResponse | null>(null)
+
+  // Skills input state
+  const [newSkillInput, setNewSkillInput] = useState('')
+
+  // Section Reordering Helper
+  const moveSection = (idx: number, direction: 'up' | 'down') => {
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1
+    if (targetIdx < 0 || targetIdx >= sections.length) return
+    const next = [...sections]
+    const temp = next[idx]
+    next[idx] = next[targetIdx]
+    next[targetIdx] = temp
+    setSections(next)
+  }
+
+  // Bullet Enhancement Handlers
+  const handleEnhanceBullet = async (expIdx: number, bIdx: number, bulletText: string, roleTitle?: string) => {
+    if (!bulletText.trim()) return
+    const key = `${expIdx}-${bIdx}`
+    setEnhancingBulletKey(key)
+    try {
+      const res = await enhanceBullet({
+        bullet: bulletText,
+        role: roleTitle || draft?.personalInfo?.headline || 'Professional',
+        techStack: draft?.skills?.join(', ') || '',
+      })
+      setBulletEnhancement({
+        key,
+        data: res,
+        selectedText: res.enhancedBullet,
+      })
+    } catch (err) {
+      console.error('Enhance bullet error', err)
+      alert('Could not enhance bullet: ' + (err instanceof Error ? err.message : 'AI error'))
+    } finally {
+      setEnhancingBulletKey(null)
+    }
+  }
+
+  const applyEnhancedBullet = (expIdx: number, bIdx: number, text: string) => {
+    if (!draft) return
+    const newExp = [...(draft.experience || [])]
+    const newBullets = [...(newExp[expIdx].bullets || [])]
+    newBullets[bIdx] = text
+    newExp[expIdx] = { ...newExp[expIdx], bullets: newBullets }
+    handleDraftChange({ ...draft, experience: newExp })
+    setBulletEnhancement(null)
+  }
+
+  const handleAddBullet = (expIdx: number) => {
+    if (!draft) return
+    const newExp = [...(draft.experience || [])]
+    const newBullets = [...(newExp[expIdx].bullets || []), '']
+    newExp[expIdx] = { ...newExp[expIdx], bullets: newBullets }
+    handleDraftChange({ ...draft, experience: newExp })
+  }
+
+  const handleRemoveBullet = (expIdx: number, bIdx: number) => {
+    if (!draft) return
+    const newExp = [...(draft.experience || [])]
+    const newBullets = [...(newExp[expIdx].bullets || [])]
+    newBullets.splice(bIdx, 1)
+    newExp[expIdx] = { ...newExp[expIdx], bullets: newBullets }
+    handleDraftChange({ ...draft, experience: newExp })
+    if (bulletEnhancement?.key === `${expIdx}-${bIdx}`) {
+      setBulletEnhancement(null)
+    }
+  }
+
+  // Skills Handlers
+  const handleAddSkill = () => {
+    if (!draft || !newSkillInput.trim()) return
+    const val = newSkillInput.trim()
+    if (draft.skills?.some((s) => s.toLowerCase() === val.toLowerCase())) {
+      setNewSkillInput('')
+      return
+    }
+    handleDraftChange({
+      ...draft,
+      skills: [...(draft.skills || []), val],
+    })
+    setNewSkillInput('')
+  }
+
+  const handleRemoveSkill = (idx: number) => {
+    if (!draft) return
+    const next = [...(draft.skills || [])]
+    next.splice(idx, 1)
+    handleDraftChange({ ...draft, skills: next })
+  }
+
+  // Job Description Matching Handlers
+  const handleAnalyzeJd = async () => {
+    if (!draft || !jdText.trim()) return
+    setIsJdAnalyzing(true)
+    setJdError(null)
+    try {
+      const [atsRes, tailorRes] = await Promise.all([
+        checkDraftAts(draft, jdText),
+        tailorDraft(draft, jdText),
+      ])
+      setAtsReport(atsRes)
+      setTailorResult(tailorRes)
+    } catch (err) {
+      console.error('JD analysis error', err)
+      setJdError(err instanceof Error ? err.message : 'Failed to analyze Job Description')
+    } finally {
+      setIsJdAnalyzing(false)
+    }
+  }
+
+  const handleAddMissingSkill = (skill: string) => {
+    if (!draft) return
+    const currentSkills = draft.skills || []
+    if (currentSkills.some((s) => s.toLowerCase() === skill.toLowerCase())) return
+    handleDraftChange({
+      ...draft,
+      skills: [...currentSkills, skill],
+    })
+  }
+
+  const handleApplyTailoredSummary = (newSummary: string) => {
+    if (!draft) return
+    handleDraftChange({
+      ...draft,
+      summary: newSummary,
+    })
+  }
+
+  const handleApplySuggestedBullet = (orig: string, replacement: string) => {
+    if (!draft) return
+    let replaced = false
+    const newExp = (draft.experience || []).map((exp) => {
+      const newBullets = (exp.bullets || []).map((b) => {
+        if (!replaced && (b.trim() === orig.trim() || b.includes(orig) || orig.includes(b))) {
+          replaced = true
+          return replacement
+        }
+        return b
+      })
+      return { ...exp, bullets: newBullets }
+    })
+    handleDraftChange({
+      ...draft,
+      experience: newExp,
+    })
+  }
 
   // --- PREVIEW HANDLER ---
   const updatePreview = async (currentDraft: ResumeDraft) => {
@@ -538,18 +719,32 @@ export function CreateResumePage() {
         <div className="w-1/2 flex flex-col gap-3 overflow-y-auto pr-2 pb-32 min-h-0 custom-scrollbar">
           <div className="flex items-center justify-between mb-1 shrink-0">
             <h2 className="text-2xl font-medium text-white">Editor</h2>
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={isLoading}
-              className="bg-[#84cc16] hover:bg-[#65a30d] text-black text-sm font-semibold px-4 py-2 rounded-lg transition-all cursor-pointer disabled:opacity-50"
-            >
-              {isLoading ? 'Saving...' : 'Save Resume'}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsJdModalOpen(true)}
+                className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600/30 to-blue-600/30 hover:from-purple-600/50 hover:to-blue-600/50 text-purple-200 border border-purple-500/40 text-xs font-semibold px-3 py-2 rounded-lg transition-all cursor-pointer shadow-sm hover:border-purple-400"
+              >
+                <span>🎯 Match Job (ATS)</span>
+                {atsReport && (
+                  <span className="px-1.5 py-0.2 rounded bg-[#84cc16] text-black text-[10px] font-bold">
+                    {atsReport.score}%
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={isLoading}
+                className="bg-[#84cc16] hover:bg-[#65a30d] text-black text-sm font-semibold px-4 py-2 rounded-lg transition-all cursor-pointer disabled:opacity-50"
+              >
+                {isLoading ? 'Saving...' : 'Save Resume'}
+              </button>
+            </div>
           </div>
 
           {/* Accordions */}
-          {['Template & Style', 'Personal Info', 'Experience', 'Education', 'Skills'].map((section) => {
+          {sections.map((section, sIdx) => {
             const tabKey = section.toLowerCase().split(' ')[0]
             const isActive = activeTab === tabKey
             return (
@@ -557,21 +752,65 @@ export function CreateResumePage() {
                 key={section}
                 className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden transition-all shrink-0"
               >
-                <button
-                  type="button"
-                  onClick={() => setActiveTab(isActive ? '' : tabKey)}
-                  className="w-full flex items-center justify-between px-4 py-3.5 min-h-[50px] bg-transparent hover:bg-white/5 transition-colors cursor-pointer"
-                >
-                  <span className="font-medium text-sm text-white select-none">{section}</span>
-                  <svg
-                    className={`w-4 h-4 text-zinc-400 transition-transform ${isActive ? 'rotate-180' : ''}`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+                <div className="w-full flex items-center justify-between px-4 py-3 min-h-[50px] bg-transparent hover:bg-white/5 transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab(isActive ? '' : tabKey)}
+                    className="flex-1 flex items-center gap-2 text-left cursor-pointer"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
+                    <span className="font-medium text-sm text-white select-none">{section}</span>
+                  </button>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    {/* Reorder Up */}
+                    <button
+                      type="button"
+                      title="Move section up"
+                      disabled={sIdx === 0}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        moveSection(sIdx, 'up')
+                      }}
+                      className="p-1 rounded text-zinc-400 hover:text-white hover:bg-white/10 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                      </svg>
+                    </button>
+
+                    {/* Reorder Down */}
+                    <button
+                      type="button"
+                      title="Move section down"
+                      disabled={sIdx === sections.length - 1}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        moveSection(sIdx, 'down')
+                      }}
+                      className="p-1 rounded text-zinc-400 hover:text-white hover:bg-white/10 disabled:opacity-20 cursor-pointer disabled:cursor-not-allowed transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+
+                    {/* Toggle Chevron */}
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab(isActive ? '' : tabKey)}
+                      className="p-1 rounded text-zinc-400 hover:text-white cursor-pointer ml-1"
+                    >
+                      <svg
+                        className={`w-4 h-4 text-zinc-400 transition-transform ${isActive ? 'rotate-180' : ''}`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
 
                 {isActive && (
                   <div className="p-4 border-t border-white/5 bg-black/20">
@@ -873,9 +1112,12 @@ export function CreateResumePage() {
                     {section === 'Experience' && (
                       <div className="space-y-4">
                         <div>
-                          <label className="block text-xs font-mono uppercase tracking-wider text-zinc-400 mb-1">
-                            Professional Summary
-                          </label>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block text-xs font-mono uppercase tracking-wider text-zinc-400">
+                              Professional Summary
+                            </label>
+                            <span className="text-[10px] text-zinc-500">AI-optimized</span>
+                          </div>
                           <textarea
                             value={draft.summary || ''}
                             onChange={(e) =>
@@ -885,52 +1127,189 @@ export function CreateResumePage() {
                               })
                             }
                             rows={3}
-                            className="w-full bg-black/40 border border-zinc-800 rounded-md px-3 py-2 text-sm text-white focus:border-[#84cc16] outline-none resize-none"
-                            placeholder="Professional Summary"
+                            className="w-full bg-black/40 border border-zinc-800 rounded-md px-3 py-2 text-xs text-white focus:border-[#84cc16] outline-none resize-none leading-relaxed"
+                            placeholder="Professional Summary..."
                           />
                         </div>
 
                         {(draft.experience || []).map((exp, expIdx) => (
-                          <div key={expIdx} className="p-3 bg-white/5 rounded border border-white/5 space-y-2">
-                            <input
-                              type="text"
-                              value={exp.role || ''}
-                              onChange={(e) => {
-                                const newExp = [...(draft.experience || [])]
-                                newExp[expIdx] = { ...newExp[expIdx], role: e.target.value }
-                                handleDraftChange({ ...draft, experience: newExp })
-                              }}
-                              className="w-full bg-black/40 border border-zinc-800 rounded px-2 py-1 text-sm text-white focus:border-[#84cc16] outline-none"
-                              placeholder="Job Title / Role"
-                            />
-                            <input
-                              type="text"
-                              value={exp.company || ''}
-                              onChange={(e) => {
-                                const newExp = [...(draft.experience || [])]
-                                newExp[expIdx] = { ...newExp[expIdx], company: e.target.value }
-                                handleDraftChange({ ...draft, experience: newExp })
-                              }}
-                              className="w-full bg-black/40 border border-zinc-800 rounded px-2 py-1 text-xs text-white focus:border-[#84cc16] outline-none"
-                              placeholder="Company"
-                            />
+                          <div key={expIdx} className="p-3.5 bg-white/[0.03] rounded-xl border border-white/10 space-y-3">
+                            <div className="grid grid-cols-2 gap-2">
+                              <input
+                                type="text"
+                                value={exp.role || ''}
+                                onChange={(e) => {
+                                  const newExp = [...(draft.experience || [])]
+                                  newExp[expIdx] = { ...newExp[expIdx], role: e.target.value }
+                                  handleDraftChange({ ...draft, experience: newExp })
+                                }}
+                                className="w-full bg-black/40 border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-white focus:border-[#84cc16] outline-none"
+                                placeholder="Job Title / Role"
+                              />
+                              <input
+                                type="text"
+                                value={exp.company || ''}
+                                onChange={(e) => {
+                                  const newExp = [...(draft.experience || [])]
+                                  newExp[expIdx] = { ...newExp[expIdx], company: e.target.value }
+                                  handleDraftChange({ ...draft, experience: newExp })
+                                }}
+                                className="w-full bg-black/40 border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-white focus:border-[#84cc16] outline-none"
+                                placeholder="Company Name"
+                              />
+                            </div>
 
-                            <div className="space-y-1.5 mt-2">
-                              {(exp.bullets || []).map((bullet: string, bIdx: number) => (
-                                <input
-                                  key={bIdx}
-                                  type="text"
-                                  value={bullet}
-                                  onChange={(e) => {
-                                    const newBullets = [...(exp.bullets || [])]
-                                    newBullets[bIdx] = e.target.value
-                                    const newExp = [...(draft.experience || [])]
-                                    newExp[expIdx] = { ...newExp[expIdx], bullets: newBullets }
-                                    handleDraftChange({ ...draft, experience: newExp })
-                                  }}
-                                  className="w-full bg-black/40 border border-zinc-800 rounded px-2 py-1 text-xs text-white focus:border-[#84cc16] outline-none"
-                                />
-                              ))}
+                            <div className="space-y-2 pt-1">
+                              <span className="text-[11px] font-semibold text-zinc-400 block">Accomplishment Bullets</span>
+                              {(exp.bullets || []).map((bullet: string, bIdx: number) => {
+                                const bulletKey = `${expIdx}-${bIdx}`
+                                const isEnhancing = enhancingBulletKey === bulletKey
+                                const hasEnhancement = bulletEnhancement?.key === bulletKey
+
+                                return (
+                                  <div key={bIdx} className="space-y-1.5">
+                                    <div className="flex items-start gap-1.5">
+                                      <textarea
+                                        value={bullet}
+                                        onChange={(e) => {
+                                          const newBullets = [...(exp.bullets || [])]
+                                          newBullets[bIdx] = e.target.value
+                                          const newExp = [...(draft.experience || [])]
+                                          newExp[expIdx] = { ...newExp[expIdx], bullets: newBullets }
+                                          handleDraftChange({ ...draft, experience: newExp })
+                                        }}
+                                        rows={2}
+                                        className="flex-1 bg-black/40 border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-white focus:border-[#84cc16] outline-none resize-none leading-relaxed"
+                                        placeholder="Accomplished [X] as measured by [Y] by doing [Z]..."
+                                      />
+                                      <div className="flex flex-col gap-1 shrink-0">
+                                        <button
+                                          type="button"
+                                          title="Enhance with Google XYZ formula & STAR method"
+                                          disabled={!bullet.trim() || isEnhancing}
+                                          onClick={() => handleEnhanceBullet(expIdx, bIdx, bullet, exp.role)}
+                                          className="px-2 py-1 bg-gradient-to-r from-purple-600/30 to-lime-600/30 hover:from-purple-600/50 hover:to-lime-600/50 border border-purple-500/40 text-[#84cc16] hover:text-white rounded text-[11px] font-semibold flex items-center gap-1 transition-all cursor-pointer disabled:opacity-40"
+                                        >
+                                          {isEnhancing ? (
+                                            <div className="w-3 h-3 border border-[#84cc16] border-t-transparent rounded-full animate-spin" />
+                                          ) : (
+                                            '✨ AI'
+                                          )}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          title="Delete bullet point"
+                                          onClick={() => handleRemoveBullet(expIdx, bIdx)}
+                                          className="px-2 py-0.5 text-zinc-500 hover:text-red-400 text-xs rounded hover:bg-white/5 transition-colors cursor-pointer"
+                                        >
+                                          ×
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    {/* Active AI Bullet Enhancement Suggestion Box */}
+                                    {hasEnhancement && (
+                                      <div className="p-3 bg-gradient-to-br from-purple-950/40 to-black/90 border border-purple-500/40 rounded-xl text-xs space-y-2 animate-in fade-in duration-200 shadow-xl">
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-1.5">
+                                            <span className="font-semibold text-purple-300">STAR / XYZ Method:</span>
+                                            {bulletEnhancement.data.actionVerbUsed && (
+                                              <span className="px-1.5 py-0.2 rounded bg-lime-500/20 text-[#84cc16] font-mono text-[10px] font-bold">
+                                                {bulletEnhancement.data.actionVerbUsed}
+                                              </span>
+                                            )}
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={() => setBulletEnhancement(null)}
+                                            className="text-zinc-400 hover:text-white cursor-pointer text-xs"
+                                          >
+                                            ✕
+                                          </button>
+                                        </div>
+
+                                        {/* Suggested Primary Bullet */}
+                                        <div
+                                          onClick={() =>
+                                            setBulletEnhancement({
+                                              ...bulletEnhancement,
+                                              selectedText: bulletEnhancement.data.enhancedBullet,
+                                            })
+                                          }
+                                          className={`p-2 rounded-lg border cursor-pointer transition-all ${
+                                            bulletEnhancement.selectedText === bulletEnhancement.data.enhancedBullet
+                                              ? 'bg-lime-500/15 border-[#84cc16] text-white shadow-[0_0_10px_rgba(132,204,22,0.15)]'
+                                              : 'bg-white/5 border-white/5 text-zinc-300 hover:border-white/20'
+                                          }`}
+                                        >
+                                          <p className="font-medium text-xs leading-relaxed">
+                                            {bulletEnhancement.data.enhancedBullet}
+                                          </p>
+                                          <span className="text-[10px] text-lime-400 mt-1 block">
+                                            ✓ Primary recommendation (metric-driven)
+                                          </span>
+                                        </div>
+
+                                        {/* Alternative Options */}
+                                        {bulletEnhancement.data.alternativeOptions?.map((alt, aIdx) => (
+                                          <div
+                                            key={aIdx}
+                                            onClick={() =>
+                                              setBulletEnhancement({
+                                                ...bulletEnhancement,
+                                                selectedText: alt,
+                                              })
+                                            }
+                                            className={`p-2 rounded-lg border cursor-pointer transition-all ${
+                                              bulletEnhancement.selectedText === alt
+                                                ? 'bg-lime-500/15 border-[#84cc16] text-white shadow-[0_0_10px_rgba(132,204,22,0.15)]'
+                                                : 'bg-white/5 border-white/5 text-zinc-300 hover:border-white/20'
+                                            }`}
+                                          >
+                                            <p className="text-xs leading-relaxed">{alt}</p>
+                                            <span className="text-[10px] text-zinc-400 mt-0.5 block">
+                                              Variation {aIdx + 1}
+                                            </span>
+                                          </div>
+                                        ))}
+
+                                        {bulletEnhancement.data.explanation && (
+                                          <p className="text-[11px] text-zinc-400 italic">
+                                            💡 {bulletEnhancement.data.explanation}
+                                          </p>
+                                        )}
+
+                                        <div className="flex items-center justify-end gap-2 pt-1">
+                                          <button
+                                            type="button"
+                                            onClick={() => setBulletEnhancement(null)}
+                                            className="px-2.5 py-1 text-xs text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                                          >
+                                            Cancel
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              applyEnhancedBullet(expIdx, bIdx, bulletEnhancement.selectedText)
+                                            }
+                                            className="px-3 py-1 bg-[#84cc16] hover:bg-[#65a30d] text-black font-semibold rounded text-xs transition-colors cursor-pointer shadow"
+                                          >
+                                            Apply to Resume ✓
+                                          </button>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )
+                              })}
+
+                              <button
+                                type="button"
+                                onClick={() => handleAddBullet(expIdx)}
+                                className="text-xs text-[#84cc16] hover:underline flex items-center gap-1 cursor-pointer font-medium pt-1"
+                              >
+                                + Add Bullet Point
+                              </button>
                             </div>
                           </div>
                         ))}
@@ -938,15 +1317,48 @@ export function CreateResumePage() {
                     )}
 
                     {section === 'Skills' && (
-                      <div className="flex flex-wrap gap-2">
-                        {(draft.skills || []).map((skill: string, sIdx: number) => (
-                          <span
-                            key={sIdx}
-                            className="px-2.5 py-1 bg-[#84cc16]/10 text-[#84cc16] border border-[#84cc16]/20 rounded text-xs font-mono"
+                      <div className="space-y-3">
+                        <div className="flex flex-wrap gap-1.5">
+                          {(draft.skills || []).map((skill: string, sIdx: number) => (
+                            <span
+                              key={sIdx}
+                              className="px-2.5 py-1 bg-[#84cc16]/10 text-[#84cc16] border border-[#84cc16]/20 rounded text-xs font-mono flex items-center gap-1.5"
+                            >
+                              <span>{skill}</span>
+                              <button
+                                type="button"
+                                title="Remove skill"
+                                onClick={() => handleRemoveSkill(sIdx)}
+                                className="text-zinc-500 hover:text-red-400 cursor-pointer text-xs"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-1">
+                          <input
+                            type="text"
+                            value={newSkillInput}
+                            onChange={(e) => setNewSkillInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                                handleAddSkill()
+                              }
+                            }}
+                            placeholder="Add a new skill (e.g. Docker, GraphQL, Kubernetes)..."
+                            className="flex-1 bg-black/40 border border-zinc-800 rounded px-2.5 py-1.5 text-xs text-white focus:border-[#84cc16] outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleAddSkill}
+                            className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded text-xs font-medium transition-colors cursor-pointer"
                           >
-                            {skill}
-                          </span>
-                        ))}
+                            + Add
+                          </button>
+                        </div>
                       </div>
                     )}
 
@@ -1059,6 +1471,220 @@ export function CreateResumePage() {
         {currentStep === 2 && renderStep2()}
         {currentStep === 3 && renderStep3()}
       </div>
+
+      {/* --- Job Description (JD) ATS Matcher & Auto-Tailor Modal --- */}
+      {isJdModalOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#121215] border border-white/15 rounded-2xl max-w-3xl w-full max-h-[88vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-black/40">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">🎯</span>
+                <div>
+                  <h3 className="text-lg font-bold text-white leading-tight">Job Description ATS Matcher &amp; Tailor</h3>
+                  <p className="text-xs text-zinc-400">Scan keyword match %, detect missing skills, and auto-tailor bullets with AI</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsJdModalOpen(false)}
+                className="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-white/5 transition-colors cursor-pointer text-lg font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar">
+              {/* Input */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-zinc-300">Target Job Description (JD)</label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setJdText(
+                        `Senior Fullstack Engineer / Tech Lead\nRequirements:\n- 4+ years experience with React, TypeScript, Next.js\n- Robust backend proficiency in Java / Spring Boot or Node.js microservices\n- Containerization and orchestration using Docker, Kubernetes, and CI/CD pipelines\n- Cloud experience with AWS or GCP\n- Proven track record optimizing database queries (MongoDB / PostgreSQL) and system architecture.`,
+                      )
+                    }
+                    className="text-[11px] text-[#84cc16] hover:underline cursor-pointer"
+                  >
+                    Fill Sample Tech Job Posting
+                  </button>
+                </div>
+                <textarea
+                  value={jdText}
+                  onChange={(e) => setJdText(e.target.value)}
+                  rows={5}
+                  placeholder="Paste target job posting from LinkedIn, Indeed, Naukri, or company careers page..."
+                  className="w-full bg-black/50 border border-zinc-800 rounded-xl p-3 text-xs text-white focus:border-[#84cc16] outline-none leading-relaxed resize-none custom-scrollbar"
+                />
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-[11px] text-zinc-500">
+                    {jdText.trim() ? `${jdText.trim().split(/\s+/).length} words` : 'Paste at least 20 words for best accuracy'}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={!jdText.trim() || isJdAnalyzing}
+                    onClick={handleAnalyzeJd}
+                    className="bg-gradient-to-r from-purple-600 to-lime-600 hover:from-purple-500 hover:to-lime-500 text-white font-semibold text-xs px-5 py-2 rounded-lg transition-all cursor-pointer disabled:opacity-40 flex items-center gap-1.5 shadow-lg"
+                  >
+                    {isJdAnalyzing ? (
+                      <>
+                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Scanning ATS &amp; Tailoring...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>⚡ Scan Match &amp; Tailor</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+                {jdError && <p className="text-xs text-red-400 mt-2">{jdError}</p>}
+              </div>
+
+              {/* Results */}
+              {atsReport && (
+                <div className="space-y-5 pt-3 border-t border-white/10">
+                  {/* Score Banner */}
+                  <div className="p-4 bg-gradient-to-r from-white/[0.04] to-white/[0.02] border border-white/10 rounded-xl flex items-center justify-between">
+                    <div>
+                      <span className="text-xs text-zinc-400 block mb-0.5">ATS Match Score</span>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-extrabold text-[#84cc16]">{atsReport.score}%</span>
+                        <span className="text-sm font-semibold text-zinc-300">Grade: {atsReport.grade}</span>
+                      </div>
+                    </div>
+                    <div className="w-48 bg-zinc-800 h-2.5 rounded-full overflow-hidden">
+                      <div
+                        className="bg-[#84cc16] h-full transition-all duration-700"
+                        style={{ width: `${atsReport.score}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Missing vs Matched Skills */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Matched Skills */}
+                    <div className="p-3.5 bg-black/40 border border-green-500/20 rounded-xl space-y-2">
+                      <span className="text-xs font-semibold text-green-400 flex items-center gap-1">
+                        <span>✓</span> Matched Skills ({tailorResult?.matchedSkills?.length ?? atsReport.keywords?.matched?.length ?? 0})
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {(tailorResult?.matchedSkills ?? atsReport.keywords?.matched ?? []).map((skill, sIdx) => (
+                          <span
+                            key={sIdx}
+                            className="px-2 py-0.5 rounded bg-green-500/10 text-green-300 border border-green-500/20 text-[11px] font-mono"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Missing Skills */}
+                    <div className="p-3.5 bg-black/40 border border-amber-500/20 rounded-xl space-y-2">
+                      <span className="text-xs font-semibold text-amber-400 flex items-center gap-1">
+                        <span>⚠️</span> Missing High-Value Skills ({tailorResult?.missingSkills?.length ?? atsReport.keywords?.missing ?? 0})
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {(tailorResult?.missingSkills ?? atsReport.keywords?.missing ?? []).map((skill, sIdx) => {
+                          const isAlreadyAdded = draft?.skills?.some((s) => s.toLowerCase() === skill.toLowerCase())
+                          return (
+                            <button
+                              key={sIdx}
+                              type="button"
+                              disabled={isAlreadyAdded}
+                              onClick={() => handleAddMissingSkill(skill)}
+                              className={`px-2 py-0.5 rounded text-[11px] font-mono transition-all flex items-center gap-1 cursor-pointer ${
+                                isAlreadyAdded
+                                  ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                                  : 'bg-amber-500/15 text-amber-200 border border-amber-500/30 hover:bg-amber-500/30'
+                              }`}
+                            >
+                              <span>{isAlreadyAdded ? '✓' : '+'}</span>
+                              <span>{skill}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tailored Professional Summary */}
+                  {tailorResult?.tailoredSummary && (
+                    <div className="p-4 bg-purple-950/20 border border-purple-500/30 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-purple-300">✨ AI Tailored Professional Summary</span>
+                        <button
+                          type="button"
+                          onClick={() => handleApplyTailoredSummary(tailorResult.tailoredSummary)}
+                          className="px-2.5 py-1 bg-[#84cc16] hover:bg-[#65a30d] text-black font-semibold rounded text-[11px] transition-colors cursor-pointer"
+                        >
+                          Apply to Resume ✓
+                        </button>
+                      </div>
+                      <p className="text-xs text-zinc-300 leading-relaxed italic bg-black/30 p-2.5 rounded-lg border border-white/5">
+                        "{tailorResult.tailoredSummary}"
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Suggested Bullet Improvements */}
+                  {tailorResult?.suggestedBulletImprovements && tailorResult.suggestedBulletImprovements.length > 0 && (
+                    <div className="space-y-3">
+                      <span className="text-xs font-semibold text-zinc-300">✨ JD-Targeted Bullet Improvements</span>
+                      {tailorResult.suggestedBulletImprovements.map((b, bIdx) => (
+                        <div key={bIdx} className="p-3 bg-black/40 border border-white/10 rounded-xl space-y-2">
+                          <div className="space-y-1">
+                            <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Original Bullet</span>
+                            <p className="text-xs text-zinc-400 line-through">{b.originalBullet}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-[10px] text-lime-400 uppercase tracking-wider font-semibold">
+                              Optimized for JD
+                            </span>
+                            <p className="text-xs text-white font-medium">{b.suggestedBullet}</p>
+                            {b.reason && <p className="text-[10px] text-zinc-500 italic">Reason: {b.reason}</p>}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleApplySuggestedBullet(b.originalBullet, b.suggestedBullet)}
+                            className="px-2.5 py-1 bg-white/10 hover:bg-[#84cc16] hover:text-black text-white text-[11px] font-semibold rounded transition-colors cursor-pointer"
+                          >
+                            Apply Bullet to Resume ✓
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Recruiter Coaching Advice */}
+                  {tailorResult?.overallAdvice && (
+                    <div className="p-3 bg-white/5 border border-white/5 rounded-xl">
+                      <span className="text-xs font-semibold text-zinc-300 block mb-1">💡 Recruiter Advice</span>
+                      <p className="text-xs text-zinc-400 leading-relaxed">{tailorResult.overallAdvice}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-3.5 border-t border-white/10 bg-black/40 flex items-center justify-between">
+              <span className="text-xs text-zinc-500">Changes apply directly to your draft in real time</span>
+              <button
+                type="button"
+                onClick={() => setIsJdModalOpen(false)}
+                className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   )
 }
