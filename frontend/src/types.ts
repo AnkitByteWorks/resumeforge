@@ -75,6 +75,7 @@ export interface ResumeDraft {
   education: DraftEducation[]
   skills: string[]
   certifications: string[]
+  pageDensity?: 'auto' | 'spacious' | 'balanced' | 'compact' | 'ultra_compact'
 }
 
 export interface AiQuestion {

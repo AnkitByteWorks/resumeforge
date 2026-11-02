@@ -25,6 +25,7 @@ public class ResumeRenderService {
     public String renderHtml(Resume resume) {
         String templateId = resume != null ? resume.getTemplateId() : null;
         String id = registry.resolve(templateId);
+
         Context ctx = new Context();
         ctx.setVariable("resume", resume);
         ctx.setVariable("contacts", contacts(resume != null ? resume.getPersonalInfo() : null));
@@ -35,6 +36,9 @@ public class ResumeRenderService {
 
     public byte[] renderPdf(Resume resume) {
         String html = renderHtml(resume);
+        if (html != null) {
+            html = html.replace("\uFEFF", "").trim();
+        }
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             PdfRendererBuilder builder = new PdfRendererBuilder();
             builder.useFastMode();

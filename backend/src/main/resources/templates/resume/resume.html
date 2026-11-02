@@ -2,16 +2,16 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8"/>
-  <title th:text="${resume.personalInfo.fullName()} + ' - Resume'">Resume</title>
+  <title th:text="${(not #strings.isEmpty(resume.personalInfo.fullName()) ? resume.personalInfo.fullName() : 'Resume') + ' - ResumeForge'}">Resume</title>
   <style th:utext="${css}"></style>
 </head>
 <body>
   <table style="width: 100%; border-collapse: collapse; margin-bottom: 8pt;">
     <tr>
       <td style="vertical-align: middle;">
-        <h1 class="name" th:text="${resume.personalInfo.fullName()}">Name</h1>
+        <h1 class="name" th:text="${not #strings.isEmpty(resume.personalInfo.fullName()) ? resume.personalInfo.fullName() : 'YOUR NAME'}">Name</h1>
         <p class="headline" th:if="${not #strings.isEmpty(resume.personalInfo.headline())}" th:text="${resume.personalInfo.headline()}" style="font-size: 11pt; color: #475569; margin: 2pt 0 4pt 0; font-weight: 600;"></p>
-        <p class="contact" th:text="${#strings.listJoin(contacts, '  |  ')}">contact</p>
+        <p class="contact" th:text="${not #lists.isEmpty(contacts) ? #strings.listJoin(contacts, '  |  ') : 'email@example.com  |  +1 (555) 000-0000  |  City, State'}">contact</p>
       </td>
       <td style="width: 70pt; text-align: right; vertical-align: middle;" th:if="${not #strings.isEmpty(resume.personalInfo.photoUrl())}">
         <img th:src="${resume.personalInfo.photoUrl()}" style="width: 60pt; height: 60pt; border-radius: 50%; object-fit: cover; border: 2px solid #cbd5e1;"/>
@@ -35,7 +35,7 @@
       <p class="entry-title" th:text="${e.role() + ', ' + e.company()}">Role, Company</p>
       <p class="entry-meta"
          th:text="${#strings.defaultString(e.startDate(),'')} + ' - ' + (${e.current()} ? 'Present' : ${#strings.defaultString(e.endDate(),'')})">dates</p>
-      <ul th:if="${not #lists.isEmpty(e.bullets())}">
+      <ul class="bullets" th:if="${not #lists.isEmpty(e.bullets())}">
         <li th:each="b : ${e.bullets()}" th:text="${b}">bullet</li>
       </ul>
     </div>
@@ -47,7 +47,7 @@
       <p class="entry-title" th:text="${p.name()}">Project</p>
       <p class="entry-meta" th:if="${not #strings.isEmpty(p.techStack())}" th:text="${p.techStack()}">Tech</p>
       <p class="entry-meta" th:if="${not #strings.isEmpty(p.link())}" th:text="${p.link()}">Link</p>
-      <ul th:if="${not #lists.isEmpty(p.bullets())}">
+      <ul class="bullets" th:if="${not #lists.isEmpty(p.bullets())}">
         <li th:each="b : ${p.bullets()}" th:text="${b}">bullet</li>
       </ul>
     </div>
@@ -66,7 +66,7 @@
 
   <div class="section" th:if="${not #lists.isEmpty(resume.certifications)}">
     <h2>Certifications</h2>
-    <ul>
+    <ul class="bullets">
       <li th:each="c : ${resume.certifications}" th:text="${c}">cert</li>
     </ul>
   </div>

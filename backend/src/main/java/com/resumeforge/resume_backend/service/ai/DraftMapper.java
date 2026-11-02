@@ -23,20 +23,22 @@ public final class DraftMapper {
                         n(x.techStack()), n(x.link()), safe(x.bullets()))).toList(),
                 safe(r.getEducation()).stream().map(e -> new ResumeDraft.Education(n(e.institution()),
                         n(e.degree()), n(e.field()), n(e.startDate()), n(e.endDate()), n(e.score()))).toList(),
-                safe(r.getSkills()), safe(r.getCertifications()));
+                safe(r.getSkills()), safe(r.getCertifications()),
+                r.getPageDensity() != null ? r.getPageDensity() : "auto");
     }
 
     public static Resume toEntity(ResumeDraft d) {
         Resume r = new Resume();
         r.setTitle(d.title());
         r.setTemplateId(d.templateId());
+        r.setPageDensity(d.pageDensity() != null ? d.pageDensity() : "auto");
         var p = d.personalInfo() != null ? d.personalInfo()
                 : new ResumeDraft.PersonalInfo("", "", "", "", "", "", "", null, null);
         r.setPersonalInfo(new Resume.PersonalInfo(p.fullName(), p.email(), p.phone(),
                 p.location(), p.linkedin(), p.github(), p.portfolio(), p.photoUrl(), p.headline()));
         r.setSummary(d.summary());
         r.setExperience(safe(d.experience()).stream().map(e -> new Resume.Experience(e.company(),
-                e.role(), e.startDate(), e.endDate(), e.current(), safe(e.bullets()))).toList());
+                e.role(), e.startDate(), e.endDate(), Boolean.TRUE.equals(e.current()), safe(e.bullets()))).toList());
         r.setProjects(safe(d.projects()).stream().map(x -> new Resume.Project(x.name(),
                 x.techStack(), x.link(), safe(x.bullets()))).toList());
         r.setEducation(safe(d.education()).stream().map(e -> new Resume.Education(e.institution(),

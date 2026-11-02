@@ -2,66 +2,72 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8"/>
-  <title th:text="${resume.personalInfo.fullName()} + ' - Resume'">Resume</title>
+  <title th:text="${(not #strings.isEmpty(resume.personalInfo.fullName()) ? resume.personalInfo.fullName() : 'Resume') + ' - ResumeForge'}">Resume</title>
   <style th:utext="${css}"></style>
 </head>
-<body style="margin: 0; padding: 22pt 26pt; font-family: 'Helvetica Neue', Arial, sans-serif; color: #1e293b; background-color: #ffffff;">
-  <!-- Header: 3 Sections -->
-  <table style="width: 100%; border-collapse: collapse; margin-bottom: 15pt; border-bottom: 1.5pt solid #e2e8f0; padding-bottom: 12pt;">
+<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; color: #1e293b; background-color: #ffffff;">
+  <!-- Header: 3 Columns -->
+  <table style="width: 100%; border-collapse: collapse; margin-bottom: 10pt;">
     <tr>
       <!-- Left: Name & Title & Summary -->
-      <td style="width: 42%; vertical-align: top; padding-right: 10pt;">
-        <h1 style="font-size: 22pt; font-weight: 800; color: #1e293b; margin: 0 0 2pt 0;"
-            th:text="${resume.personalInfo.fullName()}">Nick Koe</h1>
-        <p style="font-size: 10.5pt; color: #f87171; font-weight: 600; margin: 0 0 6pt 0;"
+      <td style="width: 42%; vertical-align: top; padding-right: 12pt;">
+        <h1 style="font-size: 20pt; font-weight: 800; color: #1e293b; margin: 0 0 2pt 0; text-transform: uppercase; letter-spacing: 0.5pt; line-height: 1.1;"
+            th:text="${not #strings.isEmpty(resume.personalInfo.fullName()) ? resume.personalInfo.fullName() : 'YOUR NAME'}">Nick Koe</h1>
+        <p style="font-size: 9.5pt; color: #f87171; font-weight: 600; text-transform: uppercase; margin: 0 0 6pt 0; letter-spacing: 0.5pt;"
            th:if="${not #strings.isEmpty(resume.personalInfo.headline())}"
            th:text="${resume.personalInfo.headline()}">Event Photographer</p>
-        <p style="font-size: 7.5pt; color: #64748b; line-height: 1.4; margin: 0;"
+        <p class="summary-text" style="color: #475569; font-size: 8.5pt; line-height: 1.45; margin: 0;"
            th:if="${not #strings.isEmpty(resume.summary)}"
            th:text="${resume.summary}">Motivated photographer summary...</p>
       </td>
 
       <!-- Middle: Photo with Coral Ring -->
-      <td style="width: 28%; text-align: center; vertical-align: middle;">
+      <td style="width: 22%; text-align: center; vertical-align: middle;">
         <img th:if="${not #strings.isEmpty(resume.personalInfo.photoUrl())}"
              th:src="${resume.personalInfo.photoUrl()}"
              alt="Photo"
-             style="width: 75pt; height: 75pt; border-radius: 50%; object-fit: cover; border: 3pt solid #f87171; display: inline-block;"/>
+             style="width: 55pt; height: 55pt; border-radius: 50%; object-fit: cover; border: 2.5pt solid #f87171; display: inline-block;"/>
         <div th:if="${#strings.isEmpty(resume.personalInfo.photoUrl())}"
-             style="width: 75pt; height: 75pt; border-radius: 50%; background-color: #fee2e2; border: 3pt solid #f87171; display: inline-block; line-height: 75pt; font-size: 24pt; font-weight: bold; color: #ef4444;"
-             th:text="${#strings.substring(resume.personalInfo.fullName(), 0, 1)}">N</div>
+             style="width: 55pt; height: 55pt; border-radius: 50%; background-color: #fff1f2; border: 2.5pt solid #f87171; display: inline-block; line-height: 55pt; text-align: center; font-size: 20pt; font-weight: 700; color: #e11d48;"
+             th:text="${not #strings.isEmpty(resume.personalInfo.fullName()) ? #strings.substring(resume.personalInfo.fullName(), 0, 1) : '&#9733;'}">N</div>
       </td>
 
       <!-- Right: Contact Stack -->
-      <td style="width: 30%; text-align: right; vertical-align: top; font-size: 7.5pt; color: #64748b; line-height: 1.6;">
-        <div th:if="${not #strings.isEmpty(resume.personalInfo.email())}" th:text="${resume.personalInfo.email()}">email</div>
-        <div th:if="${not #strings.isEmpty(resume.personalInfo.phone())}" th:text="${resume.personalInfo.phone()}">phone</div>
-        <div th:if="${not #strings.isEmpty(resume.personalInfo.location())}" th:text="${resume.personalInfo.location()}">location</div>
-        <div th:if="${not #strings.isEmpty(resume.personalInfo.linkedin())}" th:text="${resume.personalInfo.linkedin()}">linkedin</div>
-        <div th:if="${not #strings.isEmpty(resume.personalInfo.portfolio())}" th:text="${resume.personalInfo.portfolio()}">portfolio</div>
+      <td style="width: 36%; text-align: right; vertical-align: top; color: #475569; font-size: 8pt; line-height: 1.55;">
+        <div th:if="${not #strings.isEmpty(resume.personalInfo.email())}"><span th:text="${resume.personalInfo.email()}">email</span>&#160;<span style="color: #f87171;">&#9993;</span></div>
+        <div th:if="${not #strings.isEmpty(resume.personalInfo.phone())}"><span th:text="${resume.personalInfo.phone()}">phone</span>&#160;<span style="color: #f87171;">&#9742;</span></div>
+        <div th:if="${not #strings.isEmpty(resume.personalInfo.location())}"><span th:text="${resume.personalInfo.location()}">location</span>&#160;<span style="color: #f87171;">&#9873;</span></div>
+        <div th:if="${not #strings.isEmpty(resume.personalInfo.linkedin())}"><span th:text="${resume.personalInfo.linkedin()}">linkedin</span>&#160;<span style="color: #f87171; font-weight: bold;">in</span></div>
+        <div th:if="${not #strings.isEmpty(resume.personalInfo.portfolio())}"><span th:text="${resume.personalInfo.portfolio()}">portfolio</span>&#160;<span style="color: #f87171;">&#9881;</span></div>
+        <div th:if="${#strings.isEmpty(resume.personalInfo.email()) and #strings.isEmpty(resume.personalInfo.phone()) and #strings.isEmpty(resume.personalInfo.location())}" style="color: #94a3b8; font-style: italic;">
+          contact@example.com&#160;<span style="color: #f87171;">&#9993;</span>
+        </div>
       </td>
     </tr>
   </table>
+
+  <!-- Thin Horizontal Divider -->
+  <div style="border-top: 1.5pt solid #f1f5f9; margin: 6pt 0 12pt 0;"></div>
 
   <!-- Main 2 Columns -->
   <table style="width: 100%; border-collapse: collapse;">
     <tr>
       <!-- LEFT COLUMN: WORK EXPERIENCE & EDUCATION -->
-      <td style="width: 55%; vertical-align: top; padding-right: 16pt;">
+      <td style="width: 58%; vertical-align: top; padding-right: 18pt;">
         <!-- Work Experience -->
-        <div style="margin-bottom: 14pt;" th:if="${not #lists.isEmpty(resume.experience)}">
-          <h2 style="font-size: 10pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5pt; color: #0f172a; margin: 0 0 10pt 0;">WORK EXPERIENCE</h2>
-          <div th:each="e : ${resume.experience}" style="margin-bottom: 10pt;">
+        <div class="section" style="margin-bottom: 12pt;" th:if="${not #lists.isEmpty(resume.experience)}">
+          <h2 style="font-size: 10pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8pt; color: #0f172a; margin: 0 0 8pt 0;">WORK EXPERIENCE</h2>
+          <div class="entry" th:each="e : ${resume.experience}" style="margin-bottom: 9pt;">
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
-                <td style="width: 4pt; background-color: #f87171; vertical-align: top;"></td>
+                <td style="width: 3.5pt; background-color: #f87171; vertical-align: top;"></td>
                 <td style="padding-left: 8pt; vertical-align: top;">
-                  <p style="font-size: 9.5pt; font-weight: 700; color: #0f172a; margin: 0;" th:text="${e.role()}">Role</p>
-                  <p style="font-size: 8.5pt; font-weight: 600; color: #f87171; margin: 1pt 0;" th:text="${e.company()}">Company</p>
-                  <p style="font-size: 7.5pt; color: #94a3b8; font-style: italic; margin: 0 0 3pt 0;"
+                  <p class="entry-title" style="font-size: 9.5pt; font-weight: 700; color: #0f172a; margin: 0;" th:text="${e.role()}">Role</p>
+                  <p class="company" style="font-size: 8.5pt; font-weight: 600; color: #f87171; margin: 1pt 0;" th:text="${e.company()}">Company</p>
+                  <p class="entry-meta" style="font-size: 8pt; color: #94a3b8; font-style: italic; margin: 0 0 3pt 0;"
                      th:text="${#strings.defaultString(e.startDate(),'')} + ' - ' + (${e.current()} ? 'Present' : ${#strings.defaultString(e.endDate(),'')})">Dates</p>
-                  <ul th:if="${not #lists.isEmpty(e.bullets())}" style="margin: 0; padding-left: 12pt; font-size: 8pt; color: #334155; line-height: 1.4;">
-                    <li th:each="b : ${e.bullets()}" th:text="${b}" style="margin-bottom: 1.5pt;">bullet</li>
+                  <ul class="bullets" th:if="${not #lists.isEmpty(e.bullets())}" style="margin: 0; padding-left: 12pt; color: #334155; line-height: 1.38;">
+                    <li th:each="b : ${e.bullets()}" th:text="${b}" style="font-size: 8.5pt; margin-bottom: 1.8pt;">bullet</li>
                   </ul>
                 </td>
               </tr>
@@ -70,16 +76,18 @@
         </div>
 
         <!-- Education -->
-        <div style="margin-bottom: 14pt;" th:if="${not #lists.isEmpty(resume.education)}">
-          <h2 style="font-size: 10pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5pt; color: #0f172a; margin: 0 0 8pt 0;">EDUCATION</h2>
-          <div th:each="e : ${resume.education}" style="margin-bottom: 8pt;">
+        <div class="section" style="margin-bottom: 12pt;" th:if="${not #lists.isEmpty(resume.education)}">
+          <h2 style="font-size: 10pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8pt; color: #0f172a; margin: 0 0 8pt 0;">EDUCATION</h2>
+          <div class="entry" th:each="e : ${resume.education}" style="margin-bottom: 8pt;">
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
-                <td style="width: 4pt; background-color: #f87171; vertical-align: top;"></td>
+                <td style="width: 3.5pt; background-color: #f87171; vertical-align: top;"></td>
                 <td style="padding-left: 8pt; vertical-align: top;">
-                  <p style="font-size: 9pt; font-weight: 700; color: #0f172a; margin: 0;"
+                  <p class="entry-title" style="font-size: 9pt; font-weight: 700; color: #0f172a; margin: 0;"
                      th:text="${e.degree() + (e.field() != null ? ' in ' + e.field() : '')}">Degree</p>
-                  <p style="font-size: 8pt; color: #475569; margin: 1pt 0;" th:text="${e.institution()}">Institution</p>
+                  <p class="company" style="font-size: 8.5pt; color: #475569; margin: 1pt 0;" th:text="${e.institution()}">Institution</p>
+                  <p class="entry-meta" style="font-size: 8pt; color: #94a3b8; margin: 0;"
+                     th:text="${#strings.defaultString(e.startDate(),'')} + ' - ' + ${#strings.defaultString(e.endDate(),'')}">Dates</p>
                 </td>
               </tr>
             </table>
@@ -88,34 +96,34 @@
       </td>
 
       <!-- RIGHT COLUMN: SKILLS (PILLS), PROJECTS, CERTS -->
-      <td style="width: 45%; vertical-align: top;">
+      <td style="width: 42%; vertical-align: top;">
         <!-- Skills in Soft Blue Pills -->
-        <div style="margin-bottom: 14pt;" th:if="${not #lists.isEmpty(resume.skills)}">
-          <h2 style="font-size: 10pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5pt; color: #0f172a; margin: 0 0 6pt 0;">SKILLS</h2>
-          <div style="line-height: 1.8;">
+        <div class="section" style="margin-bottom: 12pt;" th:if="${not #lists.isEmpty(resume.skills)}">
+          <h2 style="font-size: 10pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8pt; color: #0f172a; margin: 0 0 6pt 0;">SKILLS</h2>
+          <div style="line-height: 1.6;">
             <span th:each="s : ${resume.skills}"
-                  style="background-color: #bfdbfe; color: #1e3a8a; border-radius: 3pt; padding: 2.5pt 6pt; margin: 2pt 3pt 2pt 0; display: inline-block; font-size: 7.5pt; font-weight: 600;"
+                  style="background-color: #e0f2fe; color: #0369a1; border-radius: 3pt; padding: 2.5pt 6.5pt; margin: 1.5pt 2.5pt 1.5pt 0; display: inline-block; font-size: 7.5pt; font-weight: 600;"
                   th:text="${s}">Skill</span>
           </div>
         </div>
 
         <!-- Projects -->
-        <div style="margin-bottom: 14pt;" th:if="${not #lists.isEmpty(resume.projects)}">
-          <h2 style="font-size: 10pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5pt; color: #0f172a; margin: 0 0 8pt 0;">PROJECTS</h2>
-          <div th:each="p : ${resume.projects}" style="margin-bottom: 8pt;">
-            <p style="font-size: 8.5pt; font-weight: 700; color: #0f172a; margin: 0;" th:text="${p.name()}">Project</p>
-            <p style="font-size: 7.5pt; color: #0284c7; margin: 1pt 0 3pt 0;" th:if="${not #strings.isEmpty(p.techStack())}" th:text="${p.techStack()}">Tech</p>
-            <ul th:if="${not #lists.isEmpty(p.bullets())}" style="margin: 0; padding-left: 12pt; font-size: 7.5pt; color: #334155; line-height: 1.35;">
-              <li th:each="b : ${p.bullets()}" th:text="${b}" style="margin-bottom: 1.5pt;">bullet</li>
+        <div class="section" style="margin-bottom: 12pt;" th:if="${not #lists.isEmpty(resume.projects)}">
+          <h2 style="font-size: 10pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8pt; color: #0f172a; margin: 0 0 6pt 0;">PROJECTS</h2>
+          <div class="entry" th:each="p : ${resume.projects}" style="margin-bottom: 8pt;">
+            <p class="entry-title" style="font-size: 9pt; font-weight: 700; color: #0f172a; margin: 0;" th:text="${p.name()}">Project</p>
+            <p class="company" style="font-size: 8pt; color: #0284c7; margin: 1pt 0 2pt 0;" th:if="${not #strings.isEmpty(p.techStack())}" th:text="${p.techStack()}">Tech</p>
+            <ul class="bullets" th:if="${not #lists.isEmpty(p.bullets())}" style="margin: 0; padding-left: 12pt; color: #334155; line-height: 1.35;">
+              <li th:each="b : ${p.bullets()}" th:text="${b}" style="font-size: 8.5pt; margin-bottom: 1.5pt;">bullet</li>
             </ul>
           </div>
         </div>
 
         <!-- Certifications -->
-        <div style="margin-bottom: 14pt;" th:if="${not #lists.isEmpty(resume.certifications)}">
-          <h2 style="font-size: 10pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5pt; color: #0f172a; margin: 0 0 6pt 0;">CERTIFICATES</h2>
-          <ul style="margin: 0; padding-left: 12pt; font-size: 8pt; color: #334155; line-height: 1.45;">
-            <li th:each="c : ${resume.certifications}" th:text="${c}" style="margin-bottom: 2.5pt;">cert</li>
+        <div class="section" style="margin-bottom: 12pt;" th:if="${not #lists.isEmpty(resume.certifications)}">
+          <h2 style="font-size: 10pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8pt; color: #0f172a; margin: 0 0 6pt 0;">CERTIFICATES</h2>
+          <ul class="bullets" style="margin: 0; padding-left: 12pt; color: #334155; line-height: 1.4;">
+            <li th:each="c : ${resume.certifications}" th:text="${c}" style="font-size: 8.5pt; margin-bottom: 2pt;">cert</li>
           </ul>
         </div>
       </td>

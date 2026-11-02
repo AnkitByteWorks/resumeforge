@@ -13,8 +13,14 @@ public record ResumeDraft(
         List<Project> projects,
         List<Education> education,
         List<String> skills,
-        List<String> certifications
+        List<String> certifications,
+        String pageDensity
 ) {
+    public ResumeDraft(String title, String templateId, PersonalInfo personalInfo, String summary,
+                       List<Experience> experience, List<Project> projects, List<Education> education,
+                       List<String> skills, List<String> certifications) {
+        this(title, templateId, personalInfo, summary, experience, projects, education, skills, certifications, "auto");
+    }
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record PersonalInfo(
             String fullName,
@@ -40,9 +46,13 @@ public record ResumeDraft(
             String role,
             String startDate,
             String endDate,
-            boolean current,
+            Boolean current,
             List<String> bullets
-    ) {}
+    ) {
+        public boolean isCurrent() {
+            return Boolean.TRUE.equals(current);
+        }
+    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Project(

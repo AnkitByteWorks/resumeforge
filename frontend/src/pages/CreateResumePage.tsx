@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router'
 import { AppLayout } from '../components/AppLayout'
+import { useAuth } from '../auth/auth-context'
 import {
   generateDraft,
   refineDraft,
@@ -64,9 +65,29 @@ const TEMPLATE_OPTIONS: Array<{
 
 export function CreateResumePage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [currentStep, setCurrentStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Virtual A4 live preview responsive scaling
+  const previewContainerRef = useRef<HTMLDivElement>(null)
+  const [previewScale, setPreviewScale] = useState(0.65)
+
+  useEffect(() => {
+    if (!previewContainerRef.current) return
+    const updateScale = () => {
+      if (!previewContainerRef.current) return
+      const width = previewContainerRef.current.clientWidth
+      // 794px is standard A4 paper width at 96 DPI. Leave 36px for container margins
+      const calculatedScale = Math.min(1, Math.max(0.35, (width - 36) / 794))
+      setPreviewScale(calculatedScale)
+    }
+    updateScale()
+    const observer = new ResizeObserver(() => updateScale())
+    observer.observe(previewContainerRef.current)
+    return () => observer.disconnect()
+  }, [])
 
   // Step 1 State
   const [rawText, setRawText] = useState('')
@@ -269,17 +290,9 @@ export function CreateResumePage() {
       const styledHtml = html.includes('</head>')
         ? html.replace(
             '</head>',
-            '<style>:root{color-scheme:light}html{background:#fff}body{padding:10mm 12mm;box-sizing:border-box}</style></head>',
+            '<style>:root{color-scheme:light}html,body{background:#fff;margin:0;box-sizing:border-box}</style></head>',
           )
-        : `
-        <style>
-          body { font-family: 'Times New Roman', serif; padding: 40px; color: #111; background: white; }
-          h1 { text-transform: uppercase; letter-spacing: 2px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
-          h2 { font-size: 14px; text-transform: uppercase; color: #555; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-top: 20px; }
-          ul { padding-left: 20px; }
-        </style>
-        ${html}
-      `
+        : html
       setPreviewHtmlString(styledHtml)
     } catch (err: unknown) {
       console.error('Preview error', err)
@@ -312,14 +325,16 @@ export function CreateResumePage() {
 
       const generatedDraft = response.draft ?? response.resume
       const resolvedHeadline = headline.trim() || targetRole.trim() || generatedDraft.personalInfo?.headline || ''
+      const resolvedName = generatedDraft.personalInfo?.fullName || user?.name || 'Your Name'
       const updatedDraft: ResumeDraft = {
         ...generatedDraft,
         personalInfo: {
           ...generatedDraft.personalInfo,
+          fullName: resolvedName,
           photoUrl: includePhoto ? photoBase64 : '',
           headline: resolvedHeadline,
         },
-        templateId: includePhoto ? 'photo-sidebar-01' : (generatedDraft.templateId || 'modern-02'),
+        templateId: includePhoto ? 'foundation-purple' : (generatedDraft.templateId || 'modern-02'),
       }
 
       setDraft(updatedDraft)
@@ -815,7 +830,7 @@ export function CreateResumePage() {
                 {isActive && (
                   <div className="p-4 border-t border-white/5 bg-black/20">
                     {section === 'Template & Style' && (
-                      <div className="space-y-3">
+                      <div className="space-y-3.5">
                         <p className="text-xs text-zinc-400">
                           Select a design &amp; color theme. Live preview reflects your choice immediately.
                         </p>
@@ -1387,32 +1402,63 @@ export function CreateResumePage() {
           })}
         </div>
 
-        {/* Right Side: Live Preview (Iframe) */}
-        <div className="w-1/2 bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col relative">
-          <div className="absolute top-4 right-4 bg-black/80 backdrop-blur-md text-white text-xs px-3 py-1.5 rounded-full z-10 flex items-center gap-2">
-            {isPreviewLoading ? (
-              <>
-                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Rendering...
-              </>
-            ) : (
-              'Live Preview'
-            )}
+        {/* Right Side: Virtual A4 Sheet Live Preview (Responsive Scaling) */}
+        <div
+          ref={previewContainerRef}
+          className="w-1/2 bg-zinc-950/70 border border-white/10 rounded-2xl p-4 flex flex-col items-center relative overflow-hidden shadow-2xl"
+        >
+          {/* Header Bar */}
+          <div className="w-full flex items-center justify-between mb-3 px-1 z-10">
+            <span className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              Live A4 Preview
+            </span>
+            <div className="bg-zinc-900/90 backdrop-blur-md text-zinc-300 text-[11px] px-2.5 py-1 rounded-full border border-white/10 flex items-center gap-2">
+              {isPreviewLoading ? (
+                <>
+                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Rendering...</span>
+                </>
+              ) : (
+                <span>A4 Sheet ({Math.round(previewScale * 100)}%)</span>
+              )}
+            </div>
           </div>
 
           {previewHtmlString ? (
-            <iframe
-              srcDoc={previewHtmlString}
-              className="w-full h-full border-0 bg-white"
-              title="Resume Preview"
-            />
+            <div className="w-full flex-1 overflow-y-auto flex justify-center py-1">
+              <div
+                style={{
+                  width: `${794 * previewScale}px`,
+                  height: `${1123 * previewScale}px`,
+                  position: 'relative',
+                  flexShrink: 0,
+                  transition: 'width 0.15s ease-out, height 0.15s ease-out',
+                }}
+                className="shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] rounded-sm overflow-hidden"
+              >
+                <iframe
+                  srcDoc={previewHtmlString}
+                  style={{
+                    width: '794px',
+                    height: '1123px',
+                    transform: `scale(${previewScale})`,
+                    transformOrigin: 'top left',
+                    border: 'none',
+                    background: '#ffffff',
+                    display: 'block',
+                  }}
+                  title="Resume Preview"
+                />
+              </div>
+            </div>
           ) : previewError ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-zinc-600">
-              <p className="text-sm text-red-500 mb-3">{previewError}</p>
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-zinc-400">
+              <p className="text-sm text-red-400 mb-3">{previewError}</p>
               <button
                 type="button"
                 onClick={() => draft && void updatePreview(draft)}
-                className="px-4 py-2 text-xs font-medium bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg transition-colors cursor-pointer"
+                className="px-4 py-2 text-xs font-medium bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors cursor-pointer border border-white/10"
               >
                 Retry Preview
               </button>

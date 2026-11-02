@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8"/>
-  <title th:text="${resume.personalInfo.fullName()} + ' - Resume'">Resume</title>
+  <title th:text="${(not #strings.isEmpty(resume.personalInfo.fullName()) ? resume.personalInfo.fullName() : 'Resume') + ' - ResumeForge'}">Resume</title>
   <style th:utext="${css}"></style>
 </head>
 <body>
@@ -10,13 +10,13 @@
     <tr>
       <!-- LEFT SIDEBAR -->
       <td class="sidebar-col">
-        <!-- Profile Photo (if present) -->
+        <!-- Profile Photo -->
         <div class="photo-container" th:if="${not #strings.isEmpty(resume.personalInfo.photoUrl())}">
-          <img class="profile-photo" th:src="${resume.personalInfo.photoUrl()}" alt="Profile Photo"/>
+          <img class="profile-photo" th:src="${resume.personalInfo.photoUrl()}" alt="Profile Photo" style="width: 55pt; height: 55pt; border-radius: 50%; object-fit: cover; display: block;"/>
         </div>
 
         <!-- Contact Details -->
-        <div class="sidebar-section">
+        <div class="section sidebar-section">
           <h3 class="sidebar-title">Contact</h3>
           <ul class="contact-list">
             <li th:if="${not #strings.isEmpty(resume.personalInfo.email())}" th:text="${resume.personalInfo.email()}">email</li>
@@ -25,11 +25,12 @@
             <li th:if="${not #strings.isEmpty(resume.personalInfo.linkedin())}" th:text="${resume.personalInfo.linkedin()}">linkedin</li>
             <li th:if="${not #strings.isEmpty(resume.personalInfo.github())}" th:text="${resume.personalInfo.github()}">github</li>
             <li th:if="${not #strings.isEmpty(resume.personalInfo.portfolio())}" th:text="${resume.personalInfo.portfolio()}">portfolio</li>
+            <li th:if="${#strings.isEmpty(resume.personalInfo.email()) and #strings.isEmpty(resume.personalInfo.phone()) and #strings.isEmpty(resume.personalInfo.location())}">contact@example.com</li>
           </ul>
         </div>
 
         <!-- Skills in Sidebar -->
-        <div class="sidebar-section" th:if="${not #lists.isEmpty(resume.skills)}">
+        <div class="section sidebar-section" th:if="${not #lists.isEmpty(resume.skills)}">
           <h3 class="sidebar-title">Skills</h3>
           <ul class="skills-list">
             <li th:each="s : ${resume.skills}" th:text="${s}">skill</li>
@@ -37,7 +38,7 @@
         </div>
 
         <!-- Certifications in Sidebar -->
-        <div class="sidebar-section" th:if="${not #lists.isEmpty(resume.certifications)}">
+        <div class="section sidebar-section" th:if="${not #lists.isEmpty(resume.certifications)}">
           <h3 class="sidebar-title">Certifications</h3>
           <ul class="cert-list">
             <li th:each="c : ${resume.certifications}" th:text="${c}">cert</li>
@@ -49,26 +50,26 @@
       <td class="main-col">
         <!-- Header Banner -->
         <div class="header-box">
-          <h1 class="name" th:text="${resume.personalInfo.fullName()}">Name</h1>
+          <h1 class="name" th:text="${not #strings.isEmpty(resume.personalInfo.fullName()) ? resume.personalInfo.fullName() : 'YOUR NAME'}">Name</h1>
           <p class="headline" th:if="${not #strings.isEmpty(resume.personalInfo.headline())}" th:text="${resume.personalInfo.headline()}">Headline</p>
           <p class="summary-text" th:if="${not #strings.isEmpty(resume.summary)}" th:text="${resume.summary}">Summary</p>
         </div>
 
         <!-- Experience -->
-        <div class="main-section" th:if="${not #lists.isEmpty(resume.experience)}">
+        <div class="section" th:if="${not #lists.isEmpty(resume.experience)}">
           <h2 class="main-heading">Experience</h2>
           <div class="entry" th:each="e : ${resume.experience}">
             <p class="entry-title" th:text="${e.role() + ' - ' + e.company()}">Role - Company</p>
             <p class="entry-meta"
                th:text="${#strings.defaultString(e.startDate(),'')} + ' - ' + (${e.current()} ? 'Present' : ${#strings.defaultString(e.endDate(),'')})">dates</p>
-            <ul th:if="${not #lists.isEmpty(e.bullets())}">
+            <ul class="bullets" th:if="${not #lists.isEmpty(e.bullets())}">
               <li th:each="b : ${e.bullets()}" th:text="${b}">bullet</li>
             </ul>
           </div>
         </div>
 
         <!-- Education -->
-        <div class="main-section" th:if="${not #lists.isEmpty(resume.education)}">
+        <div class="section" th:if="${not #lists.isEmpty(resume.education)}">
           <h2 class="main-heading">Education</h2>
           <div class="entry" th:each="e : ${resume.education}">
             <p class="entry-title" th:text="${e.degree() + (e.field() != null ? ' in ' + e.field() : '')}">Degree in Field</p>
@@ -79,13 +80,13 @@
         </div>
 
         <!-- Projects -->
-        <div class="main-section" th:if="${not #lists.isEmpty(resume.projects)}">
+        <div class="section" th:if="${not #lists.isEmpty(resume.projects)}">
           <h2 class="main-heading">Projects</h2>
           <div class="entry" th:each="p : ${resume.projects}">
             <p class="entry-title" th:text="${p.name()}">Project</p>
             <p class="entry-meta" th:if="${not #strings.isEmpty(p.techStack())}" th:text="'Tech: ' + ${p.techStack()}">Tech</p>
             <p class="entry-meta" th:if="${not #strings.isEmpty(p.link())}" th:text="${p.link()}">Link</p>
-            <ul th:if="${not #lists.isEmpty(p.bullets())}">
+            <ul class="bullets" th:if="${not #lists.isEmpty(p.bullets())}">
               <li th:each="b : ${p.bullets()}" th:text="${b}">bullet</li>
             </ul>
           </div>

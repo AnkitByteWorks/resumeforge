@@ -14,8 +14,14 @@ public record ResumeRequest(
         @Valid List<ProjectDto> projects,
         @Valid List<EducationDto> education,
         List<@NotBlank String> skills,
-        List<@NotBlank String> certifications
+        List<@NotBlank String> certifications,
+        String pageDensity
 ) {
+    public ResumeRequest(String title, String templateId, PersonalInfoDto personalInfo, String summary,
+                         List<ExperienceDto> experience, List<ProjectDto> projects, List<EducationDto> education,
+                         List<String> skills, List<String> certifications) {
+        this(title, templateId, personalInfo, summary, experience, projects, education, skills, certifications, "auto");
+    }
     public record PersonalInfoDto(
             @NotBlank @Size(max = 100) String fullName,
             @NotBlank @Email String email,

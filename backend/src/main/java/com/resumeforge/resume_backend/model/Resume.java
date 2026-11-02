@@ -33,6 +33,7 @@ public class Resume {
     private List<String> skills = new ArrayList<>();
     private List<String> certifications = new ArrayList<>();
     private Integer atsScore;
+    private String pageDensity = "auto";
 
     @CreatedDate
     private Instant createdAt;

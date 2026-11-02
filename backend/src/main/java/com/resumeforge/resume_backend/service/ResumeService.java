@@ -61,6 +61,7 @@ public class ResumeService {
     private void apply(Resume r, ResumeRequest q) {
         r.setTitle(q.title());
         r.setTemplateId(q.templateId());
+        r.setPageDensity(q.pageDensity() != null ? q.pageDensity() : "auto");
         var p = q.personalInfo();
         r.setPersonalInfo(new Resume.PersonalInfo(p.fullName(), p.email(), p.phone(),
                 p.location(), p.linkedin(), p.github(), p.portfolio(), p.photoUrl(), p.headline()));

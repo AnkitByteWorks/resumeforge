@@ -71,7 +71,24 @@ public class TemplateRegistry {
                 || resolved.equals("teal-timeline")
                 || resolved.equals("nordic-earnshaw")
                 || resolved.equals("sage-ramanathan")
-                || resolved.equals("slate-alvarado");
+                || resolved.equals("slate-alvarado")
+                || resolved.equals("seafoam-smith")
+                || resolved.equals("coral-koe")
+                || resolved.equals("creative-watson")
+                || resolved.equals("botanical-bale");
+    }
+
+    public boolean isFullBleed(String id) {
+        String resolved = resolve(id);
+        return resolved.equals("foundation-purple")
+                || resolved.equals("austin-yellow")
+                || resolved.equals("split-navy")
+                || resolved.equals("nordic-earnshaw")
+                || resolved.equals("teal-timeline")
+                || resolved.equals("sage-ramanathan")
+                || resolved.equals("slate-alvarado")
+                || resolved.equals("botanical-bale")
+                || resolved.startsWith("photo-");
     }
 
     public boolean hasPhoto(String id) {
