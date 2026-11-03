@@ -9,7 +9,9 @@ import com.resumeforge.resume_backend.service.ai.AiResumeService;
 import com.resumeforge.resume_backend.service.ai.DraftMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1/ai")
@@ -57,5 +59,12 @@ public class AiController {
     public TailorResumeResponse tailorDraft(@Valid @RequestBody TailorDraftRequest request) {
         Resume resume = DraftMapper.toEntity(request.draft());
         return aiResumeService.tailorResume(resume, request.jobDescription());
+    }
+
+    @PostMapping(value = "/parse-resume", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public AiDraftResult parseResume(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "targetRole", required = false) String targetRole) {
+        return aiResumeService.parseResumeFromFile(file, targetRole);
     }
 }

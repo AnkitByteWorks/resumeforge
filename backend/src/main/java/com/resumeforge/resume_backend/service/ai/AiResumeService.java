@@ -5,10 +5,18 @@ import com.resumeforge.resume_backend.dto.ai.*;
 import com.resumeforge.resume_backend.model.Resume;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
@@ -430,6 +438,342 @@ public class AiResumeService {
                     "Give me an example bullet for " + role,
                     "How to write a punchy 50-word summary"
             ), "fallback");
+        }
+    }
+
+    public AiDraftResult parseResumeFromFile(MultipartFile file, String targetRole) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Please upload a valid, non-empty PDF file.");
+        }
+        String originalFilename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "resume.pdf";
+        if (!originalFilename.toLowerCase().endsWith(".pdf") && !"application/pdf".equalsIgnoreCase(file.getContentType())) {
+            throw new IllegalArgumentException("Only PDF files (.pdf) are supported.");
+        }
+        if (file.getSize() > 15 * 1024 * 1024) {
+            throw new IllegalArgumentException("PDF file size must be under 15MB.");
+        }
+
+        String rawText;
+        try (InputStream is = file.getInputStream();
+             PDDocument document = PDDocument.load(is)) {
+            if (document.isEncrypted()) {
+                throw new IllegalArgumentException("The uploaded PDF is password protected. Please upload an unencrypted PDF.");
+            }
+            PDFTextStripper stripper = new PDFTextStripper();
+            stripper.setSortByPosition(true);
+            rawText = stripper.getText(document);
+        } catch (IOException e) {
+            log.error("Failed to read PDF document: {}", e.getMessage(), e);
+            throw new IllegalArgumentException("Failed to read PDF document: " + e.getMessage());
+        }
+
+        if (rawText == null || rawText.trim().length() < 30) {
+            throw new IllegalArgumentException("We could not extract readable text from this PDF. It may be an image scan or empty. Please copy and paste your resume text instead.");
+        }
+
+        String role = (targetRole != null && !targetRole.isBlank()) ? targetRole.trim() : "";
+
+        String systemInstruction = """
+                You are an elite ATS resume parser and executive career strategist.
+                Your task is to analyze raw text extracted from a candidate's existing resume PDF and extract every detail into a clean, structured, and ATS-optimized resume draft conforming strictly to the provided JSON schema.
+
+                Parsing & Structuring Instructions:
+                1. Personal Info:
+                   - fullName: Extract accurately from the header/contact block.
+                   - email, phone, location (City, State/Country), linkedin, github, portfolio.
+                   - headline: Professional headline (e.g. "Senior Software Engineer | Distributed Systems & Cloud").
+                2. Title:
+                   - A descriptive title like "[FullName] - Resume" or "[Role] Resume".
+                3. Template:
+                   - Set templateId to "modern-02" by default.
+                4. Summary:
+                   - Extract the professional summary/profile from the resume. If missing or brief, construct a high-impact 35-50 word professional summary synthesizing their career achievements.
+                5. Work Experience:
+                   - Extract all roles chronologically.
+                   - Extract company name, role/title, startDate (e.g. "Jan 2021" or "2021"), endDate (or "Present"), and current flag.
+                   - bullets: Extract accomplishment bullets. Clean up bullet artifacts (like strange bullet characters or trailing broken lines). Reframe each bullet using strong past-tense action verbs (e.g. Engineered, Spearheaded, Architected, Optimized) and keep metrics (%, $, scale, users) intact.
+                6. Projects:
+                   - Extract key technical projects, tech stack used, links (if present), and outcome bullets.
+                7. Education:
+                   - Extract institution, degree, field of study, start/end dates, and GPA/score if mentioned.
+                8. Skills:
+                   - Extract all relevant technical skills, programming languages, frameworks, cloud platforms, and tools as clean individual strings. Deduplicate them.
+                9. Certifications:
+                   - Extract certifications or licenses.
+                10. Follow-up Questions:
+                   - Generate 2 to 3 targeted clarifying questions asking the candidate about missing metrics (e.g. team size, latency improvements, dollar impact) or clarifying ambiguities to elevate their resume even further.
+                """;
+
+        String userContent = String.format("""
+                Target Role Preference: %s
+                Filename: %s
+
+                EXTRACTED RESUME RAW TEXT:
+                \"\"\"
+                %s
+                \"\"\"
+                """,
+                role.isEmpty() ? "Detect from resume experience" : role,
+                originalFilename,
+                rawText
+        );
+
+        try {
+            AiDraftResult result = geminiClient.generate(systemInstruction, userContent, AiSchemas.draftSchema(), AiDraftResult.class);
+            if (result != null && result.resume() != null) {
+                return result;
+            }
+        } catch (Exception e) {
+            log.warn("Gemini resume parsing failed or unavailable: {}. Using heuristic PDF parser fallback.", e.getMessage());
+        }
+
+        return fallbackParseResume(rawText, originalFilename, role);
+    }
+
+    private AiDraftResult fallbackParseResume(String rawText, String filename, String targetRole) {
+        String[] lines = rawText.split("\\R");
+        List<String> cleanLines = new ArrayList<>();
+        for (String line : lines) {
+            String trimmed = line.trim();
+            if (!trimmed.isEmpty()) {
+                cleanLines.add(trimmed);
+            }
+        }
+
+        // 1. Extract contact information with regex
+        String email = "";
+        Matcher emailMatcher = Pattern.compile("(?i)[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}").matcher(rawText);
+        if (emailMatcher.find()) {
+            email = emailMatcher.group().trim();
+        }
+
+        String phone = "";
+        Matcher phoneMatcher = Pattern.compile("(\\+?\\d{1,3}[-.\\s]?)?\\(?\\d{3}\\)?[-.\\s]?\\d{3}[-.\\s]?\\d{4}").matcher(rawText);
+        if (phoneMatcher.find()) {
+            phone = phoneMatcher.group().trim();
+        }
+
+        String linkedin = "";
+        Matcher linkedinMatcher = Pattern.compile("(?i)(https?://)?(www\\.)?linkedin\\.com/in/([a-zA-Z0-9_-]+)").matcher(rawText);
+        if (linkedinMatcher.find()) {
+            linkedin = linkedinMatcher.group().trim();
+        }
+
+        String github = "";
+        Matcher githubMatcher = Pattern.compile("(?i)(https?://)?(www\\.)?github\\.com/([a-zA-Z0-9_-]+)").matcher(rawText);
+        if (githubMatcher.find()) {
+            github = githubMatcher.group().trim();
+        }
+
+        // 2. Extract full name (usually first non-contact line)
+        String fullName = "";
+        for (int i = 0; i < Math.min(cleanLines.size(), 5); i++) {
+            String line = cleanLines.get(i);
+            if (!line.contains("@") && !line.matches(".*\\d{3}.*") && !line.toLowerCase().contains("http")
+                    && !line.toLowerCase().contains("resume") && !line.toLowerCase().contains("curriculum")
+                    && line.length() >= 2 && line.length() <= 40) {
+                fullName = line;
+                break;
+            }
+        }
+        if (fullName.isEmpty()) {
+            fullName = "Candidate Name";
+        }
+
+        String role = (targetRole != null && !targetRole.isBlank()) ? targetRole.trim() : "Professional";
+        String title = fullName + " - Resume";
+
+        // 3. Segment sections
+        List<String> skills = new ArrayList<>();
+        List<ResumeDraft.Experience> experiences = new ArrayList<>();
+        List<ResumeDraft.Education> educationList = new ArrayList<>();
+        List<ResumeDraft.Project> projects = new ArrayList<>();
+        List<String> certifications = new ArrayList<>();
+        StringBuilder summaryBuilder = new StringBuilder();
+
+        String currentSection = "HEADER";
+        List<String> currentSectionLines = new ArrayList<>();
+
+        for (String line : cleanLines) {
+            String upper = line.toUpperCase().trim();
+            String detectedSection = detectSectionHeader(upper);
+            if (detectedSection != null) {
+                processSection(currentSection, currentSectionLines, summaryBuilder, experiences, educationList, projects, skills, certifications);
+                currentSection = detectedSection;
+                currentSectionLines.clear();
+            } else {
+                currentSectionLines.add(line);
+            }
+        }
+        processSection(currentSection, currentSectionLines, summaryBuilder, experiences, educationList, projects, skills, certifications);
+
+        String summary = summaryBuilder.toString().trim();
+        if (summary.isEmpty()) {
+            summary = String.format("Accomplished %s with a strong track record of success. Adept at driving technical solutions, collaborating with cross-functional teams, and delivering measurable results.", role);
+        }
+
+        if (skills.isEmpty()) {
+            skills.addAll(List.of("Problem Solving", "Team Collaboration", "Communication", "Project Management"));
+        }
+
+        if (experiences.isEmpty()) {
+            experiences.add(new ResumeDraft.Experience(
+                    "Professional Experience",
+                    role,
+                    "2022",
+                    "Present",
+                    true,
+                    List.of(
+                            "Spearheaded key initiatives resulting in measurable improvements to workflow and system efficiency.",
+                            "Collaborated across departments to design, implement, and deliver high-impact deliverables on schedule."
+                    )
+            ));
+        }
+
+        var personalInfo = new ResumeDraft.PersonalInfo(
+                fullName,
+                email,
+                phone,
+                "",
+                linkedin,
+                github,
+                "",
+                null,
+                role
+        );
+
+        var draft = new ResumeDraft(
+                title,
+                "modern-02",
+                personalInfo,
+                summary,
+                experiences,
+                projects,
+                educationList,
+                skills,
+                certifications
+        );
+
+        var questions = List.of(
+                new AiDraftResult.AiQuestion("1", "What was your most notable metric or achievement in your recent position?"),
+                new AiDraftResult.AiQuestion("2", "Which specific technologies, tools, or frameworks did you leverage most frequently?"),
+                new AiDraftResult.AiQuestion("3", "Are there any additional certifications or projects you'd like to highlight?")
+        );
+
+        return new AiDraftResult(draft, questions);
+    }
+
+    private String detectSectionHeader(String upper) {
+        if (upper.matches("^(WORK\\s+)?EXPERIENCE.*") || upper.matches("^EMPLOYMENT(\\s+HISTORY)?.*") || upper.matches("^CAREER\\s+HISTORY.*")) {
+            return "EXPERIENCE";
+        }
+        if (upper.matches("^EDUCATION.*") || upper.matches("^ACADEMIC(\\s+BACKGROUND)?.*")) {
+            return "EDUCATION";
+        }
+        if (upper.matches("^SKILLS.*") || upper.matches("^TECHNICAL\\s+SKILLS.*") || upper.matches("^CORE\\s+COMPETENCIES.*")) {
+            return "SKILLS";
+        }
+        if (upper.matches("^PROJECTS.*") || upper.matches("^KEY\\s+PROJECTS.*") || upper.matches("^PERSONAL\\s+PROJECTS.*")) {
+            return "PROJECTS";
+        }
+        if (upper.matches("^SUMMARY.*") || upper.matches("^PROFESSIONAL\\s+SUMMARY.*") || upper.matches("^OBJECTIVE.*") || upper.matches("^ABOUT\\s+ME.*")) {
+            return "SUMMARY";
+        }
+        if (upper.matches("^CERTIFICATIONS?.*") || upper.matches("^LICENSES?.*") || upper.matches("^AWARDS.*")) {
+            return "CERTIFICATIONS";
+        }
+        return null;
+    }
+
+    private void processSection(String section, List<String> lines, StringBuilder summaryBuilder,
+                                List<ResumeDraft.Experience> experiences,
+                                List<ResumeDraft.Education> educationList,
+                                List<ResumeDraft.Project> projects,
+                                List<String> skills,
+                                List<String> certifications) {
+        if (lines.isEmpty()) return;
+
+        switch (section) {
+            case "SUMMARY" -> {
+                for (String l : lines) {
+                    if (summaryBuilder.length() > 0) summaryBuilder.append(" ");
+                    summaryBuilder.append(l);
+                }
+            }
+            case "SKILLS" -> {
+                for (String l : lines) {
+                    String[] tokens = l.split("[,|•\\-–]");
+                    for (String token : tokens) {
+                        String s = token.trim();
+                        if (!s.isEmpty() && s.length() < 35 && !skills.contains(s)) {
+                            skills.add(s);
+                        }
+                    }
+                }
+            }
+            case "EXPERIENCE" -> {
+                String currentCompany = "";
+                String currentRole = "";
+                String currentStart = "";
+                String currentEnd = "";
+                List<String> bullets = new ArrayList<>();
+
+                for (String l : lines) {
+                    if (l.startsWith("•") || l.startsWith("-") || l.startsWith("*")) {
+                        bullets.add(l.replaceFirst("^[•\\-*]\\s*", "").trim());
+                    } else if (bullets.isEmpty() && currentCompany.isEmpty()) {
+                        currentCompany = l;
+                    } else if (bullets.isEmpty() && currentRole.isEmpty()) {
+                        currentRole = l;
+                    } else {
+                        if (l.length() > 20) {
+                            bullets.add(l);
+                        }
+                    }
+                }
+                if (currentCompany.isEmpty()) currentCompany = "Company Experience";
+                if (currentRole.isEmpty()) currentRole = "Role / Title";
+                if (bullets.isEmpty()) bullets.add("Contributed to team deliverables and key operational tasks.");
+
+                experiences.add(new ResumeDraft.Experience(
+                        currentCompany,
+                        currentRole,
+                        currentStart.isEmpty() ? "2022" : currentStart,
+                        currentEnd.isEmpty() ? "Present" : currentEnd,
+                        true,
+                        bullets
+                ));
+            }
+            case "EDUCATION" -> {
+                String inst = lines.get(0);
+                String degree = lines.size() > 1 ? lines.get(1) : "Bachelor's Degree";
+                educationList.add(new ResumeDraft.Education(
+                        inst,
+                        degree,
+                        "",
+                        "",
+                        "",
+                        ""
+                ));
+            }
+            case "PROJECTS" -> {
+                String name = lines.get(0);
+                List<String> pBullets = new ArrayList<>();
+                for (int i = 1; i < lines.size(); i++) {
+                    pBullets.add(lines.get(i).replaceFirst("^[•\\-*]\\s*", "").trim());
+                }
+                projects.add(new ResumeDraft.Project(name, "", "", pBullets));
+            }
+            case "CERTIFICATIONS" -> {
+                for (String l : lines) {
+                    String cert = l.replaceFirst("^[•\\-*]\\s*", "").trim();
+                    if (!cert.isEmpty() && !certifications.contains(cert)) {
+                        certifications.add(cert);
+                    }
+                }
+            }
+            default -> {
+            }
         }
     }
 }

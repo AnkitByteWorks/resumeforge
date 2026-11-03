@@ -97,6 +97,35 @@ export async function apiBlob(path: string, options: RequestOptions = {}): Promi
   return (await send(path, options)).blob()
 }
 
+export async function apiUpload<T>(path: string, formData: FormData, auth = true): Promise<T> {
+  const headers: Record<string, string> = {}
+  if (auth) {
+    const token = tokenStore.get()
+    if (token) headers['Authorization'] = `Bearer ${token}`
+  }
+
+  let res: Response
+  try {
+    res = await fetch(path, {
+      method: 'POST',
+      headers,
+      body: formData,
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    })
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'TimeoutError') {
+      throw new ApiError(0, 'The request took too long. Please try again.')
+    }
+    throw new ApiError(0, 'Cannot reach the server. Check your connection and try again.')
+  }
+
+  if (!res.ok) {
+    if (res.status === 401 && auth && onUnauthorized) onUnauthorized()
+    throw new ApiError(res.status, await readError(res))
+  }
+  return (await res.json()) as T
+}
+
 async function readError(res: Response): Promise<string> {
   try {
     const problem = await res.json()

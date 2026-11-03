@@ -10,6 +10,7 @@ import {
   enhanceBullet,
   tailorDraft,
   checkDraftAts,
+  parseResumePdf,
 } from '../api/resumes'
 import { cleanDraft } from '../lib/draft'
 import type { ResumeDraft, EnhanceBulletResponse, TailorResumeResponse, AtsReport } from '../types'
@@ -90,11 +91,19 @@ export function CreateResumePage() {
   }, [])
 
   // Step 1 State
+  const [inputMode, setInputMode] = useState<'pdf' | 'text'>('pdf')
   const [rawText, setRawText] = useState('')
   const [targetRole, setTargetRole] = useState('')
   const [includePhoto, setIncludePhoto] = useState(false)
   const [photoBase64, setPhotoBase64] = useState('')
   const [headline, setHeadline] = useState('')
+
+  // Step 1 PDF Upload State
+  const [pdfFile, setPdfFile] = useState<File | null>(null)
+  const [isPdfDragging, setIsPdfDragging] = useState(false)
+  const [isPdfParsing, setIsPdfParsing] = useState(false)
+  const [pdfParsingStatus, setPdfParsingStatus] = useState('')
+  const pdfInputRef = useRef<HTMLInputElement>(null)
 
   // Step 2 State
   const [questions, setQuestions] = useState<{ question: string; answer: string }[]>([])
@@ -363,6 +372,84 @@ export function CreateResumePage() {
     }
   }
 
+  const handlePdfUpload = async (fileToParse?: File | null) => {
+    const file = fileToParse ?? pdfFile
+    if (!file) {
+      setError('Please choose a PDF resume file to upload.')
+      return
+    }
+    if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
+      setError('Please select a valid PDF file (.pdf).')
+      return
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      setError('PDF file size must be under 15MB.')
+      return
+    }
+
+    setPdfFile(file)
+    setIsPdfParsing(true)
+    setError(null)
+    setPdfParsingStatus('Extracting text and structure from PDF...')
+
+    const t1 = setTimeout(() => {
+      setPdfParsingStatus('AI identifying roles, metrics, skills & achievements...')
+    }, 2500)
+    const t2 = setTimeout(() => {
+      setPdfParsingStatus('Formulating ATS draft and smart interview questions...')
+    }, 6000)
+
+    try {
+      const response = await parseResumePdf(file, targetRole)
+      clearTimeout(t1)
+      clearTimeout(t2)
+
+      const generatedDraft = response.draft ?? response.resume
+      const resolvedHeadline = headline.trim() || targetRole.trim() || generatedDraft.personalInfo?.headline || ''
+      const resolvedName = generatedDraft.personalInfo?.fullName || user?.name || 'Your Name'
+      const updatedDraft: ResumeDraft = {
+        ...generatedDraft,
+        personalInfo: {
+          ...generatedDraft.personalInfo,
+          fullName: resolvedName,
+          photoUrl: includePhoto ? photoBase64 : '',
+          headline: resolvedHeadline,
+        },
+        templateId: includePhoto ? 'foundation-purple' : (generatedDraft.templateId || 'modern-02'),
+      }
+
+      if (!targetRole && resolvedHeadline) {
+        setTargetRole(resolvedHeadline)
+      }
+
+      setDraft(updatedDraft)
+
+      if (response.questions && response.questions.length > 0) {
+        setQuestions(
+          response.questions.map((q: { question?: string } | string) => ({
+            question: typeof q === 'string' ? q : q.question || '',
+            answer: '',
+          })),
+        )
+      } else {
+        setQuestions([
+          { question: 'What was your biggest accomplishment or quantified result in your most recent role?', answer: '' },
+          { question: 'Are there any key tools, certifications, or metrics you want to add?', answer: '' },
+        ])
+      }
+
+      setCurrentStep(2)
+    } catch (err: unknown) {
+      clearTimeout(t1)
+      clearTimeout(t2)
+      console.error('PDF parsing error', err)
+      setError(err instanceof Error ? err.message : 'Failed to parse resume PDF. Please try again or paste text.')
+    } finally {
+      setIsPdfParsing(false)
+      setPdfParsingStatus('')
+    }
+  }
+
   const handleRefine = async () => {
     if (!draft) return
     setIsLoading(true)
@@ -589,58 +676,243 @@ export function CreateResumePage() {
               </div>
             )}
           </div>
-          <div>
+          {/* Input Method Toggle */}
+          <div className="pt-1">
             <label className="block text-sm font-medium text-zinc-300 mb-2">
-              Your Experience &amp; Skills
+              Choose How to Start
             </label>
-            <textarea
-              value={rawText}
-              onChange={(e) => setRawText(e.target.value)}
-              rows={8}
-              placeholder="I have 5 years of experience building React apps. I worked at Google as a UI Engineer..."
-              className="w-full bg-black/40 border border-zinc-800 text-white rounded-lg px-4 py-3 outline-none focus:border-[#84cc16] focus:ring-1 focus:ring-[#84cc16] transition-all resize-none"
-            />
-          </div>
-          <div>
-            <p className="text-xs text-zinc-500 mb-2 uppercase tracking-wider font-semibold">
-              Quick Start Examples
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {SAMPLE_CHIPS.map((chip) => (
-                <button
-                  type="button"
-                  key={chip}
-                  onClick={() => setTargetRole(chip)}
-                  className="px-3 py-1.5 rounded-full text-xs font-medium bg-white/5 border border-white/10 text-zinc-300 hover:bg-[#84cc16]/10 hover:border-[#84cc16]/30 hover:text-[#84cc16] transition-all cursor-pointer"
-                >
-                  {chip}
-                </button>
-              ))}
+            <div className="grid grid-cols-2 p-1 bg-black/40 border border-white/10 rounded-xl gap-1">
+              <button
+                type="button"
+                onClick={() => setInputMode('pdf')}
+                className={`py-3 px-4 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  inputMode === 'pdf'
+                    ? 'bg-[#84cc16] text-black shadow-lg shadow-[#84cc16]/20'
+                    : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <span>Upload Resume (PDF)</span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
+                  inputMode === 'pdf' ? 'bg-black/20 text-black' : 'bg-[#84cc16]/10 text-[#84cc16]'
+                }`}>
+                  New ✨
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setInputMode('text')}
+                className={`py-3 px-4 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  inputMode === 'text'
+                    ? 'bg-[#84cc16] text-black shadow-lg shadow-[#84cc16]/20'
+                    : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <span>Type or Paste Text</span>
+              </button>
             </div>
           </div>
-        </div>
 
-        <div className="mt-8 flex justify-end">
-          <button
-            type="button"
-            onClick={handleGenerate}
-            disabled={!rawText.trim() || isLoading}
-            className="bg-[#84cc16] hover:bg-[#65a30d] text-black font-semibold px-8 py-3 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
-          >
-            {isLoading ? (
-              <>
-                <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                Generate with AI
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </>
-            )}
-          </button>
+          {inputMode === 'pdf' ? (
+            /* PDF Upload Dropzone */
+            <div className="space-y-4 pt-1">
+              <input
+                type="file"
+                ref={pdfInputRef}
+                accept=".pdf,application/pdf"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) {
+                    setPdfFile(file)
+                    setError(null)
+                  }
+                }}
+              />
+
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  setIsPdfDragging(true)
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault()
+                  setIsPdfDragging(false)
+                }}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  setIsPdfDragging(false)
+                  const file = e.dataTransfer.files?.[0]
+                  if (file) {
+                    setPdfFile(file)
+                    setError(null)
+                  }
+                }}
+                onClick={() => !isPdfParsing && pdfInputRef.current?.click()}
+                className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer group ${
+                  isPdfDragging
+                    ? 'border-[#84cc16] bg-[#84cc16]/10 scale-[1.01]'
+                    : pdfFile
+                    ? 'border-[#84cc16]/60 bg-black/40 hover:border-[#84cc16]'
+                    : 'border-zinc-700 bg-black/30 hover:border-zinc-500 hover:bg-black/40'
+                }`}
+              >
+                {isPdfParsing ? (
+                  <div className="py-6 flex flex-col items-center justify-center space-y-4">
+                    <div className="relative">
+                      <div className="w-16 h-16 rounded-full border-4 border-[#84cc16]/20 border-t-[#84cc16] animate-spin" />
+                      <div className="absolute inset-0 flex items-center justify-center text-xl">
+                        📄
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-white animate-pulse">
+                        {pdfParsingStatus || 'AI Parsing your resume...'}
+                      </p>
+                      <p className="text-xs text-zinc-400">
+                        Extracting contact, experience, education &amp; skills
+                      </p>
+                    </div>
+                  </div>
+                ) : pdfFile ? (
+                  <div className="py-2 flex flex-col items-center justify-center space-y-3">
+                    <div className="w-14 h-14 rounded-2xl bg-[#84cc16]/10 border border-[#84cc16]/30 flex items-center justify-center text-3xl">
+                      📑
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-white flex items-center justify-center gap-2">
+                        {pdfFile.name}
+                        <span className="text-[11px] bg-white/10 text-zinc-300 px-2 py-0.5 rounded-full font-normal">
+                          {(pdfFile.size / 1024).toFixed(0)} KB
+                        </span>
+                      </p>
+                      <p className="text-xs text-zinc-400 mt-1">
+                        Click or drag to replace with another PDF
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 pt-1">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setPdfFile(null)
+                          if (pdfInputRef.current) pdfInputRef.current.value = ''
+                        }}
+                        className="text-xs text-red-400 hover:text-red-300 underline cursor-pointer"
+                      >
+                        Remove file
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-4 flex flex-col items-center justify-center space-y-3">
+                    <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 group-hover:border-[#84cc16]/40 group-hover:scale-110 flex items-center justify-center text-2xl transition-all">
+                      📄
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-white">
+                        Click to browse or drop your resume PDF here
+                      </p>
+                      <p className="text-xs text-zinc-400 mt-1">
+                        Supports PDF up to 15MB • Preserves your employment history &amp; achievements
+                      </p>
+                    </div>
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-zinc-300 font-medium">
+                      <span>Instant ATS Conversion</span>
+                      <span className="text-[#84cc16]">⚡</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* PDF Parsing action button */}
+              <div className="flex justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => handlePdfUpload()}
+                  disabled={!pdfFile || isPdfParsing}
+                  className="bg-[#84cc16] hover:bg-[#65a30d] text-black font-semibold px-8 py-3 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer shadow-lg shadow-[#84cc16]/10"
+                >
+                  {isPdfParsing ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                      Parsing with AI...
+                    </>
+                  ) : (
+                    <>
+                      Parse Resume with AI
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Text Input Mode */
+            <div className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">
+                  Your Experience &amp; Skills
+                </label>
+                <textarea
+                  value={rawText}
+                  onChange={(e) => setRawText(e.target.value)}
+                  rows={8}
+                  placeholder="I have 5 years of experience building React apps. I worked at Google as a UI Engineer..."
+                  className="w-full bg-black/40 border border-zinc-800 text-white rounded-lg px-4 py-3 outline-none focus:border-[#84cc16] focus:ring-1 focus:ring-[#84cc16] transition-all resize-none"
+                />
+              </div>
+
+              <div>
+                <p className="text-xs text-zinc-500 mb-2 uppercase tracking-wider font-semibold">
+                  Quick Start Examples
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {SAMPLE_CHIPS.map((chip) => (
+                    <button
+                      type="button"
+                      key={chip}
+                      onClick={() => setTargetRole(chip)}
+                      className="px-3 py-1.5 rounded-full text-xs font-medium bg-white/5 border border-white/10 text-zinc-300 hover:bg-[#84cc16]/10 hover:border-[#84cc16]/30 hover:text-[#84cc16] transition-all cursor-pointer"
+                    >
+                      {chip}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-8 flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleGenerate}
+                  disabled={!rawText.trim() || isLoading}
+                  className="bg-[#84cc16] hover:bg-[#65a30d] text-black font-semibold px-8 py-3 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      Generate with AI
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

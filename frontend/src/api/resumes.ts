@@ -1,4 +1,4 @@
-import { api, apiBlob, apiText } from './client'
+import { api, apiBlob, apiText, apiUpload } from './client'
 import type {
   AiAnswer,
   AiDraftResult,
@@ -47,6 +47,23 @@ export async function generateDraft(
     },
   })
 
+  return {
+    ...res,
+    draft: res.resume,
+  }
+}
+
+export async function parseResumePdf(
+  file: File,
+  targetRole?: string | null
+): Promise<AiDraftResult & { draft: ResumeDraft }> {
+  const formData = new FormData()
+  formData.append('file', file)
+  if (targetRole && targetRole.trim()) {
+    formData.append('targetRole', targetRole.trim())
+  }
+
+  const res = await apiUpload<AiDraftResult>('/api/v1/ai/parse-resume', formData)
   return {
     ...res,
     draft: res.resume,
