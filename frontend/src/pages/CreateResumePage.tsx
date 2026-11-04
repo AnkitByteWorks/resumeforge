@@ -40,189 +40,26 @@ const TEMPLATE_OPTIONS: Array<{
   featured?: boolean
   sortOrder: number
 }> = [
-  // ==========================================
-  // TOP PICKS (Rank #1 to #12)
-  // ==========================================
-  { id: 'modern-02', name: 'Modern Navy', color: '#1f4e79', category: 'ATS Standard', hasPhoto: false, desc: 'Clean sans-serif with deep blue accent headings, high ATS parse rate', badge: '🎯 99% ATS', featured: true, sortOrder: 1 },
+  // Top Picks
+  { id: 'modern-02', name: 'Modern Navy', color: '#1f4e79', category: 'ATS Standard', hasPhoto: false, desc: 'Clean sans-serif with deep blue accent headings, maximum ATS parse score', badge: '🎯 99% ATS', featured: true, sortOrder: 1 },
   { id: 'foundation-purple', name: 'Foundation Purple', color: '#4a2c82', category: 'Photo & Creative', hasPhoto: true, desc: 'Royal purple banner box with circular headshot & left skills sidebar', badge: '⭐ TOP PICK', featured: true, sortOrder: 2 },
   { id: 'split-navy', name: 'Navy Split Sidebar', color: '#1e3a8a', category: 'Split Layout', hasPhoto: false, desc: 'Solid navy right sidebar with white text & left chronological timeline', badge: '🔥 MOST POPULAR', featured: true, sortOrder: 3 },
   { id: 'minimalist-bennett', name: 'Bennett Minimalist', color: '#27272a', category: 'ATS Standard', hasPhoto: false, desc: 'Ultra-clean monochrome ATS with horizontal dividers & bottom bar', badge: '✨ EXECUTIVE', featured: true, sortOrder: 4 },
   { id: 'austin-yellow', name: 'Austin Highlighter', color: '#facc15', category: 'Photo & Creative', hasPhoto: true, desc: 'High contrast black sidebar with photo & vibrant yellow highlighter name', badge: '💼 BEST FOR TECH', featured: true, sortOrder: 5 },
-  { id: 'classic-01', name: 'Classic Serif', color: '#111827', category: 'ATS Standard', hasPhoto: false, desc: 'Traditional serif, centered header, monochrome standard for finance & law', badge: '📜 TRADITIONAL', featured: true, sortOrder: 6 },
-  { id: 'emerald-03', name: 'Executive Emerald', color: '#047857', category: 'ATS Standard', hasPhoto: false, desc: 'Professional forest emerald accents with crisp executive dividers', badge: '🌿 LEADERSHIP', featured: true, sortOrder: 7 },
-  { id: 'teal-timeline', name: 'Natalie Timeline', color: '#0d9488', category: 'Split Layout', hasPhoto: true, desc: 'Dark teal sidebar, white photo frame, teal badge pills & timeline dots', badge: '⭐ TOP PICK', featured: true, sortOrder: 8 },
-  { id: 'editorial-smith', name: 'Jane Editorial', color: '#09090b', category: 'Modern Minimalist', hasPhoto: false, desc: 'Warm cream background, bold "Hello! I am..." header & thick rules', badge: '✨ STYLISTIC', featured: true, sortOrder: 9 },
-  { id: 'creative-watson', name: 'Watson Creative', color: '#ea580c', category: 'Photo & Creative', hasPhoto: true, desc: 'Orange & teal geometric outer border frame with photo & icon badges', badge: '🎨 DESIGNER PICK', featured: true, sortOrder: 10 },
-  { id: 'slate-alvarado', name: 'Lorna Slate', color: '#2563eb', category: 'Photo & Creative', hasPhoto: true, desc: 'Diagonal slate-blue header with circular photo & timeline node dots', badge: '💎 MODERN ATS', featured: true, sortOrder: 11 },
-  { id: 'nordic-earnshaw', name: 'Nordic Taupe', color: '#78716c', category: 'Photo & Creative', hasPhoto: true, desc: 'Warm beige/taupe sidebar with rectangular photo & editorial typography', badge: '🕊️ MINIMALIST', featured: true, sortOrder: 12 },
+  { id: 'teal-timeline', name: 'Natalie Timeline', color: '#0d9488', category: 'Split Layout', hasPhoto: true, desc: 'Dark teal sidebar, white photo frame, teal badge pills & timeline dots', badge: '⭐ TOP PICK', featured: true, sortOrder: 6 },
+  { id: 'editorial-smith', name: 'Jane Editorial', color: '#09090b', category: 'Modern Minimalist', hasPhoto: false, desc: 'Warm cream background, bold "Hello! I am..." header & thick rules', badge: '✨ STYLISTIC', featured: true, sortOrder: 7 },
+  { id: 'creative-watson', name: 'Watson Creative', color: '#ea580c', category: 'Photo & Creative', hasPhoto: true, desc: 'Orange & teal geometric outer border frame with photo & icon badges', badge: '🎨 DESIGNER PICK', featured: true, sortOrder: 8 },
+  { id: 'slate-alvarado', name: 'Lorna Slate', color: '#2563eb', category: 'Photo & Creative', hasPhoto: true, desc: 'Diagonal slate-blue header with circular photo & timeline node dots', badge: '💎 MODERN ATS', featured: true, sortOrder: 9 },
+  { id: 'nordic-earnshaw', name: 'Nordic Taupe', color: '#78716c', category: 'Photo & Creative', hasPhoto: true, desc: 'Warm beige/taupe sidebar with rectangular photo & editorial typography', badge: '🕊️ MINIMALIST', featured: true, sortOrder: 10 },
 
-  // ==========================================
-  // ARCHETYPE 1: MODERN ATS (Variants 13-17)
-  // ==========================================
-  { id: 'modern-emerald', name: 'Modern Forest Emerald', color: '#047857', category: 'ATS Standard', hasPhoto: false, desc: 'Clean single-column ATS with deep emerald green accent lines', sortOrder: 13 },
-  { id: 'modern-crimson', name: 'Modern Ruby Crimson', color: '#9f1239', category: 'ATS Standard', hasPhoto: false, desc: 'Clean single-column ATS with distinguished ruby red heading rules', sortOrder: 14 },
-  { id: 'modern-charcoal', name: 'Modern Charcoal Noir', color: '#18181b', category: 'ATS Standard', hasPhoto: false, desc: 'Minimalist single-column ATS with graphite black accent rules', sortOrder: 15 },
-  { id: 'modern-purple', name: 'Modern Royal Violet', color: '#6d28d9', category: 'ATS Standard', hasPhoto: false, desc: 'Contemporary single-column ATS with bold violet purple highlights', sortOrder: 16 },
-  { id: 'modern-amber', name: 'Modern Amber Gold', color: '#d97706', category: 'ATS Standard', hasPhoto: false, desc: 'Warm professional single-column ATS with amber bronze styling', sortOrder: 17 },
-
-  // ==========================================
-  // ARCHETYPE 2: FOUNDATION (Variants 18-22)
-  // ==========================================
-  { id: 'foundation-navy', name: 'Foundation Corporate Navy', color: '#1e3a8a', category: 'Photo & Creative', hasPhoto: true, desc: 'Executive navy top banner with circular avatar and skills sidebar', badge: '🔥 POPULAR', sortOrder: 18 },
-  { id: 'foundation-emerald', name: 'Foundation Forest Emerald', color: '#047857', category: 'Photo & Creative', hasPhoto: true, desc: 'Forest green top banner with circular avatar and structured sidebar', sortOrder: 19 },
-  { id: 'foundation-crimson', name: 'Foundation Burgundy Ruby', color: '#9f1239', category: 'Photo & Creative', hasPhoto: true, desc: 'Burgundy ruby banner with headshot frame and clean badges', sortOrder: 20 },
-  { id: 'foundation-charcoal', name: 'Foundation Midnight Charcoal', color: '#18181b', category: 'Photo & Creative', hasPhoto: true, desc: 'Pitch-black executive banner with circular headshot and dark accents', sortOrder: 21 },
-  { id: 'foundation-teal', name: 'Foundation Ocean Teal', color: '#0d9488', category: 'Photo & Creative', hasPhoto: true, desc: 'Deep ocean teal banner with headshot frame and skill badges', sortOrder: 22 },
-
-  // ==========================================
-  // ARCHETYPE 3: SPLIT SIDEBAR (Variants 23-27)
-  // ==========================================
-  { id: 'split-emerald', name: 'Emerald Split Sidebar', color: '#047857', category: 'Split Layout', hasPhoto: false, desc: 'Solid forest green sidebar with white typography & timeline', sortOrder: 23 },
-  { id: 'split-charcoal', name: 'Onyx Split Sidebar', color: '#18181b', category: 'Split Layout', hasPhoto: false, desc: 'Solid graphite charcoal sidebar with high-contrast timeline', badge: '✨ EXECUTIVE', sortOrder: 24 },
-  { id: 'split-purple', name: 'Violet Split Sidebar', color: '#581c87', category: 'Split Layout', hasPhoto: false, desc: 'Solid deep violet sidebar with white typography & left timeline', sortOrder: 25 },
-  { id: 'split-crimson', name: 'Crimson Split Sidebar', color: '#881337', category: 'Split Layout', hasPhoto: false, desc: 'Solid burgundy crimson sidebar with clean chronological timeline', sortOrder: 26 },
-  { id: 'split-teal', name: 'Teal Split Sidebar', color: '#115e59', category: 'Split Layout', hasPhoto: false, desc: 'Solid deep teal sidebar with white text & chronological layout', sortOrder: 27 },
-
-  // ==========================================
-  // ARCHETYPE 4: BENNETT MINIMALIST (Variants 28-32)
-  // ==========================================
-  { id: 'bennett-navy', name: 'Bennett Corporate Navy', color: '#1e3a8a', category: 'ATS Standard', hasPhoto: false, desc: 'Minimalist horizontal dividing rules in corporate navy blue', sortOrder: 28 },
-  { id: 'bennett-emerald', name: 'Bennett Forest Emerald', color: '#047857', category: 'ATS Standard', hasPhoto: false, desc: 'Ultra-clean minimalist structure in dark forest emerald', sortOrder: 29 },
-  { id: 'bennett-burgundy', name: 'Bennett Deep Burgundy', color: '#9f1239', category: 'ATS Standard', hasPhoto: false, desc: 'Distinguished minimalist horizontal rules in burgundy crimson', sortOrder: 30 },
-  { id: 'bennett-slate', name: 'Bennett Slate Gray', color: '#475569', category: 'ATS Standard', hasPhoto: false, desc: 'Soft graphite slate horizontal dividers with clean whitespace', sortOrder: 31 },
-  { id: 'bennett-amber', name: 'Bennett Amber Bronze', color: '#b45309', category: 'ATS Standard', hasPhoto: false, desc: 'Warm bronze minimalist dividers for consulting & advisory', sortOrder: 32 },
-
-  // ==========================================
-  // ARCHETYPE 5: AUSTIN HIGHLIGHTER (Variants 33-37)
-  // ==========================================
-  { id: 'austin-cyan', name: 'Austin Neon Cyan', color: '#06b6d4', category: 'Photo & Creative', hasPhoto: true, desc: 'Black photo sidebar with vibrant electric cyan highlighter name', sortOrder: 33 },
-  { id: 'austin-emerald', name: 'Austin Neon Emerald', color: '#10b981', category: 'Photo & Creative', hasPhoto: true, desc: 'High contrast black sidebar with bright lime-emerald highlighter name', sortOrder: 34 },
-  { id: 'austin-rose', name: 'Austin Vibrant Coral', color: '#f43f5e', category: 'Photo & Creative', hasPhoto: true, desc: 'Pitch-black photo sidebar with bright coral rose name header', sortOrder: 35 },
-  { id: 'austin-violet', name: 'Austin Electric Violet', color: '#8b5cf6', category: 'Photo & Creative', hasPhoto: true, desc: 'Black photo sidebar with neon purple highlighter name accent', sortOrder: 36 },
-  { id: 'austin-orange', name: 'Austin Blaze Orange', color: '#f97316', category: 'Photo & Creative', hasPhoto: true, desc: 'High-contrast dark sidebar with vivid blaze orange name accent', sortOrder: 37 },
-
-  // ==========================================
-  // ARCHETYPE 6: CLASSIC SERIF (Variants 38-42)
-  // ==========================================
-  { id: 'classic-navy', name: 'Classic Oxford Navy', color: '#1e3a8a', category: 'ATS Standard', hasPhoto: false, desc: 'Centered traditional serif format with dignified Oxford navy accents', sortOrder: 38 },
-  { id: 'classic-emerald', name: 'Classic Cambridge Emerald', color: '#065f46', category: 'ATS Standard', hasPhoto: false, desc: 'Traditional serif structure with prestigious dark green accents', sortOrder: 39 },
-  { id: 'classic-burgundy', name: 'Classic Harvard Crimson', color: '#831843', category: 'ATS Standard', hasPhoto: false, desc: 'Timeless centered serif resume with deep Harvard crimson rules', sortOrder: 40 },
-  { id: 'classic-slate', name: 'Classic Charcoal Slate', color: '#334155', category: 'ATS Standard', hasPhoto: false, desc: 'Elegant serif layout with refined graphite gray typography', sortOrder: 41 },
-  { id: 'classic-gold', name: 'Classic Antique Gold', color: '#92400e', category: 'ATS Standard', hasPhoto: false, desc: 'Traditional serif layout with distinguished antique bronze accents', sortOrder: 42 },
-
-  // ==========================================
-  // ARCHETYPE 7: EXECUTIVE EMERALD (Variants 43-47)
-  // ==========================================
-  { id: 'emerald-navy', name: 'Executive Navy Steel', color: '#1e3a8a', category: 'ATS Standard', hasPhoto: false, desc: 'Senior executive layout with deep steel navy section borders', sortOrder: 43 },
-  { id: 'emerald-ruby', name: 'Executive Deep Ruby', color: '#9f1239', category: 'ATS Standard', hasPhoto: false, desc: 'Leadership ATS format with distinguished dark ruby red accents', sortOrder: 44 },
-  { id: 'emerald-charcoal', name: 'Executive Imperial Onyx', color: '#18181b', category: 'ATS Standard', hasPhoto: false, desc: 'C-Suite executive layout in crisp, ultra-clean monochrome black', sortOrder: 45 },
-  { id: 'emerald-violet', name: 'Executive Royal Purple', color: '#6d28d9', category: 'ATS Standard', hasPhoto: false, desc: 'Executive ATS layout with authoritative royal purple divider rules', sortOrder: 46 },
-  { id: 'emerald-bronze', name: 'Executive Warm Bronze', color: '#78350f', category: 'ATS Standard', hasPhoto: false, desc: 'Executive format with warm Tuscan bronze accent lines', sortOrder: 47 },
-
-  // ==========================================
-  // ARCHETYPE 8: NATALIE TIMELINE (Variants 48-52)
-  // ==========================================
-  { id: 'timeline-navy', name: 'Timeline Midnight Navy', color: '#1e3a8a', category: 'Split Layout', hasPhoto: true, desc: 'Solid midnight navy sidebar with timeline nodes & pill badges', sortOrder: 48 },
-  { id: 'timeline-emerald', name: 'Timeline Forest Green', color: '#047857', category: 'Split Layout', hasPhoto: true, desc: 'Deep green sidebar with connected timeline nodes and white photo frame', sortOrder: 49 },
-  { id: 'timeline-violet', name: 'Timeline Electric Purple', color: '#7c3aed', category: 'Split Layout', hasPhoto: true, desc: 'Rich violet purple sidebar with connected career milestone dots', sortOrder: 50 },
-  { id: 'timeline-crimson', name: 'Timeline Rose Crimson', color: '#be123c', category: 'Split Layout', hasPhoto: true, desc: 'Burgundy sidebar with circular photo frame and timeline badges', sortOrder: 51 },
-  { id: 'timeline-slate', name: 'Timeline Graphite', color: '#334155', category: 'Split Layout', hasPhoto: true, desc: 'Charcoal slate sidebar with white avatar frame and clean nodes', sortOrder: 52 },
-
-  // ==========================================
-  // ARCHETYPE 9: JANE EDITORIAL (Variants 53-57)
-  // ==========================================
-  { id: 'editorial-navy', name: 'Editorial Deep Navy', color: '#1e3a8a', category: 'Modern Minimalist', hasPhoto: false, desc: 'Editorial cream page with bold "Hello!" in deep nautical navy', sortOrder: 53 },
-  { id: 'editorial-burgundy', name: 'Editorial Wine Red', color: '#881337', category: 'Modern Minimalist', hasPhoto: false, desc: 'Stylistic editorial format with rich wine red headers and rules', sortOrder: 54 },
-  { id: 'editorial-emerald', name: 'Editorial Dark Pine', color: '#064e3b', category: 'Modern Minimalist', hasPhoto: false, desc: 'Editorial magazine typography with dark forest pine green lines', sortOrder: 55 },
-  { id: 'editorial-taupe', name: 'Editorial Warm Taupe', color: '#57534e', category: 'Modern Minimalist', hasPhoto: false, desc: 'Minimalist cream page with warm taupe earth-tone dividers', sortOrder: 56 },
-  { id: 'editorial-violet', name: 'Editorial Plum Velvet', color: '#581c87', category: 'Modern Minimalist', hasPhoto: false, desc: 'Bold editorial serif typography with deep velvet plum headers', sortOrder: 57 },
-
-  // ==========================================
-  // ARCHETYPE 10: WATSON CREATIVE (Variants 58-62)
-  // ==========================================
-  { id: 'watson-navy', name: 'Watson Geometric Navy', color: '#1e3a8a', category: 'Photo & Creative', hasPhoto: true, desc: 'Geometric outer frame in deep corporate navy with skill badges', sortOrder: 58 },
-  { id: 'watson-purple', name: 'Watson Electric Indigo', color: '#6366f1', category: 'Photo & Creative', hasPhoto: true, desc: 'Vibrant indigo geometric outer border frame with photo icon badges', sortOrder: 59 },
-  { id: 'watson-emerald', name: 'Watson Emerald Mint', color: '#059669', category: 'Photo & Creative', hasPhoto: true, desc: 'Geometric border layout in emerald green with stylish icon badges', sortOrder: 60 },
-  { id: 'watson-crimson', name: 'Watson Ruby Sunset', color: '#e11d48', category: 'Photo & Creative', hasPhoto: true, desc: 'Crimson ruby outer frame with circular avatar & graphic pill tags', sortOrder: 61 },
-  { id: 'watson-charcoal', name: 'Watson Monochrome Bold', color: '#18181b', category: 'Photo & Creative', hasPhoto: true, desc: 'High-contrast monochrome geometric frame with sharp icon tags', sortOrder: 62 },
-
-  // ==========================================
-  // ARCHETYPE 11: LORNA SLATE (Variants 63-67)
-  // ==========================================
-  { id: 'alvarado-purple', name: 'Alvarado Royal Amethyst', color: '#7c3aed', category: 'Photo & Creative', hasPhoto: true, desc: 'Diagonal royal purple header with avatar & chronological node dots', sortOrder: 63 },
-  { id: 'alvarado-emerald', name: 'Alvarado Jade Green', color: '#059669', category: 'Photo & Creative', hasPhoto: true, desc: 'Diagonal emerald header block with circular avatar & timeline', sortOrder: 64 },
-  { id: 'alvarado-crimson', name: 'Alvarado Scarlet Red', color: '#dc2626', category: 'Photo & Creative', hasPhoto: true, desc: 'Diagonal scarlet header with photo & chronological milestone line', sortOrder: 65 },
-  { id: 'alvarado-amber', name: 'Alvarado Golden Sunset', color: '#d97706', category: 'Photo & Creative', hasPhoto: true, desc: 'Warm amber diagonal banner with circular photo & timeline nodes', sortOrder: 66 },
-  { id: 'alvarado-graphite', name: 'Alvarado Pitch Charcoal', color: '#1e293b', category: 'Photo & Creative', hasPhoto: true, desc: 'Graphite charcoal diagonal header with professional node layout', sortOrder: 67 },
-
-  // ==========================================
-  // ARCHETYPE 12: NORDIC TAUPE (Variants 68-72)
-  // ==========================================
-  { id: 'nordic-navy', name: 'Nordic Fjord Navy', color: '#1e3a8a', category: 'Photo & Creative', hasPhoto: true, desc: 'Scandinavian taupe layout with deep fjord navy accents and photo', sortOrder: 68 },
-  { id: 'nordic-emerald', name: 'Nordic Forest Green', color: '#065f46', category: 'Photo & Creative', hasPhoto: true, desc: 'Minimalist Scandinavian design with evergreen forest sidebar accents', sortOrder: 69 },
-  { id: 'nordic-terracotta', name: 'Nordic Terracotta Clay', color: '#c2410c', category: 'Photo & Creative', hasPhoto: true, desc: 'Warm earth-tone terracotta sidebar with rectangular photo frame', sortOrder: 70 },
-  { id: 'nordic-charcoal', name: 'Nordic Scandinavian Noir', color: '#1c1917', category: 'Photo & Creative', hasPhoto: true, desc: 'Ultra-minimalist monochrome sidebar with structured photo layout', sortOrder: 71 },
-  { id: 'nordic-violet', name: 'Nordic Heather Violet', color: '#7e22ce', category: 'Photo & Creative', hasPhoto: true, desc: 'Soft Nordic beige aesthetic with muted heather violet accents', sortOrder: 72 },
-
-  // ==========================================
-  // ARCHETYPE 13: FRANKLIN MINT (Variants 73-78)
-  // ==========================================
-  { id: 'mint-franklin', name: 'Franklin Mint', color: '#059669', category: 'ATS Standard', hasPhoto: false, desc: 'Single-column ATS with pastel mint green banner strips', sortOrder: 73 },
-  { id: 'franklin-navy', name: 'Franklin Pastel Navy', color: '#2563eb', category: 'ATS Standard', hasPhoto: false, desc: 'Single-column ATS with soft pastel blue banner headings', sortOrder: 74 },
-  { id: 'franklin-purple', name: 'Franklin Lavender Tint', color: '#9333ea', category: 'ATS Standard', hasPhoto: false, desc: 'Clean single-column ATS with soft lavender banner accents', sortOrder: 75 },
-  { id: 'franklin-rose', name: 'Franklin Pastel Rose', color: '#e11d48', category: 'ATS Standard', hasPhoto: false, desc: 'Pastel rose banner strip headings for clean ATS compliance', sortOrder: 76 },
-  { id: 'franklin-amber', name: 'Franklin Warm Apricot', color: '#d97706', category: 'ATS Standard', hasPhoto: false, desc: 'Warm apricot banner strip headings with clean typography', sortOrder: 77 },
-  { id: 'franklin-slate', name: 'Franklin Soft Graphite', color: '#475569', category: 'ATS Standard', hasPhoto: false, desc: 'Subtle graphite banner strips with modern sans-serif type', sortOrder: 78 },
-
-  // ==========================================
-  // ARCHETYPE 14: BOTANICAL BALE (Variants 79-84)
-  // ==========================================
-  { id: 'botanical-bale', name: 'Botanical Green', color: '#164e63', category: 'Photo & Creative', hasPhoto: true, desc: 'Dark botanical green left border accent with top-right headshot', sortOrder: 79 },
-  { id: 'botanical-navy', name: 'Botanical Deep Sea', color: '#1e3a8a', category: 'Photo & Creative', hasPhoto: true, desc: 'Left ocean navy vertical bar accent with circular top photo', sortOrder: 80 },
-  { id: 'botanical-purple', name: 'Botanical Royal Orchid', color: '#581c87', category: 'Photo & Creative', hasPhoto: true, desc: 'Royal orchid purple vertical bar accent with headshot display', sortOrder: 81 },
-  { id: 'botanical-crimson', name: 'Botanical Red Cedar', color: '#991b1b', category: 'Photo & Creative', hasPhoto: true, desc: 'Deep cedar crimson vertical stripe with clean resume structure', sortOrder: 82 },
-  { id: 'botanical-charcoal', name: 'Botanical Black Olive', color: '#18181b', category: 'Photo & Creative', hasPhoto: true, desc: 'Monochrome black left accent stripe with modern typography', sortOrder: 83 },
-  { id: 'botanical-amber', name: 'Botanical Autumn Amber', color: '#b45309', category: 'Photo & Creative', hasPhoto: true, desc: 'Warm golden amber vertical accent with top headshot frame', sortOrder: 84 },
-
-  // ==========================================
-  // ARCHETYPE 15: NICK CORAL (Variants 85-90)
-  // ==========================================
-  { id: 'coral-koe', name: 'Nick Coral', color: '#f87171', category: 'Photo & Creative', hasPhoto: true, desc: 'Coral framed circular headshot, coral job accents & soft blue pills', sortOrder: 85 },
-  { id: 'coral-cyan', name: 'Nick Aegean Cyan', color: '#0284c7', category: 'Photo & Creative', hasPhoto: true, desc: 'Aegean cyan photo frame with matching pill badges and job accents', sortOrder: 86 },
-  { id: 'coral-emerald', name: 'Nick Spring Emerald', color: '#10b981', category: 'Photo & Creative', hasPhoto: true, desc: 'Spring emerald framed avatar with soft green badge tags', sortOrder: 87 },
-  { id: 'coral-purple', name: 'Nick Pastel Violet', color: '#8b5cf6', category: 'Photo & Creative', hasPhoto: true, desc: 'Soft pastel violet photo border with matching pill tags', sortOrder: 88 },
-  { id: 'coral-amber', name: 'Nick Marigold Gold', color: '#f59e0b', category: 'Photo & Creative', hasPhoto: true, desc: 'Vibrant marigold photo frame with gold badge accents', sortOrder: 89 },
-  { id: 'coral-noir', name: 'Nick Monochrome Chic', color: '#27272a', category: 'Photo & Creative', hasPhoto: true, desc: 'Chic charcoal avatar border with subtle graphite pill tags', sortOrder: 90 },
-
-  // ==========================================
-  // ARCHETYPE 16: PARVATI BORDERED (Variants 91-96)
-  // ==========================================
-  { id: 'executive-parvati', name: 'Parvati Bordered', color: '#18181b', category: 'ATS Standard', hasPhoto: false, desc: 'Full-page thin border box, centered uppercase & inline 2-col dates', sortOrder: 91 },
-  { id: 'parvati-navy', name: 'Parvati Diplomat Navy', color: '#1e3a8a', category: 'ATS Standard', hasPhoto: false, desc: 'Full-page thin navy framing box with dignified uppercase headings', sortOrder: 92 },
-  { id: 'parvati-emerald', name: 'Parvati Sovereign Emerald', color: '#065f46', category: 'ATS Standard', hasPhoto: false, desc: 'Full-page thin forest emerald border with symmetrical executive type', sortOrder: 93 },
-  { id: 'parvati-crimson', name: 'Parvati Royal Crimson', color: '#881337', category: 'ATS Standard', hasPhoto: false, desc: 'Full-page thin burgundy border with elegant centered header', sortOrder: 94 },
-  { id: 'parvati-gold', name: 'Parvati Chancellor Gold', color: '#92400e', category: 'ATS Standard', hasPhoto: false, desc: 'Full-page antique gold border box with classical centered layout', sortOrder: 95 },
-  { id: 'parvati-slate', name: 'Parvati Oxford Slate', color: '#334155', category: 'ATS Standard', hasPhoto: false, desc: 'Full-page thin slate border frame with understated legal elegance', sortOrder: 96 },
-
-  // ==========================================
-  // ARCHETYPE 17: EMAA SKY (Variants 97-102)
-  // ==========================================
-  { id: 'sky-warner', name: 'Emaa Sky Blue', color: '#0284c7', category: 'Photo & Creative', hasPhoto: true, desc: 'Pastel sky-blue geometric header block with circular photo & dark footer', sortOrder: 97 },
-  { id: 'sky-indigo', name: 'Emaa Midnight Indigo', color: '#4338ca', category: 'Photo & Creative', hasPhoto: true, desc: 'Midnight indigo geometric header block with circular photo frame', sortOrder: 98 },
-  { id: 'sky-emerald', name: 'Emaa Jade Wave', color: '#059669', category: 'Photo & Creative', hasPhoto: true, desc: 'Jade emerald geometric top block with avatar and clean columns', sortOrder: 99 },
-  { id: 'sky-rose', name: 'Emaa Blushing Rose', color: '#e11d48', category: 'Photo & Creative', hasPhoto: true, desc: 'Blush rose geometric header block with circular avatar frame', sortOrder: 100 },
-  { id: 'sky-amber', name: 'Emaa Sunset Gold', color: '#d97706', category: 'Photo & Creative', hasPhoto: true, desc: 'Warm sunset gold header block with headshot display & footer', sortOrder: 101 },
-  { id: 'sky-charcoal', name: 'Emaa Carbon Studio', color: '#18181b', category: 'Photo & Creative', hasPhoto: true, desc: 'Graphite carbon geometric top block with modern typography', sortOrder: 102 },
-
-  // ==========================================
-  // ARCHETYPE 18: PRIYA SAGE & NELLY SEAFOAM (Variants 103-108)
-  // ==========================================
-  { id: 'sage-ramanathan', name: 'Priya Sage', color: '#4a7048', category: 'Photo & Creative', hasPhoto: true, desc: 'Sage green circular icon badges & solid sage rounded banner headers', sortOrder: 103 },
-  { id: 'sage-navy', name: 'Priya Twilight Navy', color: '#1e3a8a', category: 'Photo & Creative', hasPhoto: true, desc: 'Twilight navy rounded banner headers with circular icon badges', sortOrder: 104 },
-  { id: 'sage-plum', name: 'Priya Deep Plum', color: '#701a75', category: 'Photo & Creative', hasPhoto: true, desc: 'Deep plum rounded banner headers with circular photo and badges', sortOrder: 105 },
-  { id: 'sage-crimson', name: 'Priya Velvet Ruby', color: '#9f1239', category: 'Photo & Creative', hasPhoto: true, desc: 'Rich velvet ruby rounded headers with matching icon badges', sortOrder: 106 },
-  { id: 'sage-terracotta', name: 'Priya Warm Terracotta', color: '#c2410c', category: 'Photo & Creative', hasPhoto: true, desc: 'Warm terracotta rounded banner strips with circular icon tags', sortOrder: 107 },
-  { id: 'seafoam-smith', name: 'Nelly Seafoam', color: '#0f5132', category: 'Modern Minimalist', hasPhoto: false, desc: 'Seafoam green name box, 3-column contact/summary/skills & banner strips', sortOrder: 108 },
+  // Remaining Screenshot Reference Templates (11 - 17)
+  { id: 'botanical-bale', name: 'Botanical Green', color: '#164e63', category: 'Photo & Creative', hasPhoto: true, desc: 'Dark botanical green left border accent with top-right headshot', sortOrder: 11 },
+  { id: 'mint-franklin', name: 'Franklin Mint', color: '#059669', category: 'ATS Standard', hasPhoto: false, desc: 'Single-column ATS with pastel mint green banner strips', sortOrder: 12 },
+  { id: 'coral-koe', name: 'Nick Coral', color: '#f87171', category: 'Photo & Creative', hasPhoto: true, desc: 'Coral framed circular headshot, coral job accents & soft blue pills', sortOrder: 13 },
+  { id: 'executive-parvati', name: 'Parvati Bordered', color: '#18181b', category: 'ATS Standard', hasPhoto: false, desc: 'Full-page thin border box, centered uppercase & inline 2-col dates', sortOrder: 14 },
+  { id: 'sky-warner', name: 'Emaa Sky Blue', color: '#0284c7', category: 'Photo & Creative', hasPhoto: true, desc: 'Pastel sky-blue geometric header block with circular photo & dark footer', sortOrder: 15 },
+  { id: 'sage-ramanathan', name: 'Priya Sage', color: '#4a7048', category: 'Photo & Creative', hasPhoto: true, desc: 'Sage green circular icon badges & solid sage rounded banner headers', sortOrder: 16 },
+  { id: 'seafoam-smith', name: 'Nelly Seafoam', color: '#0f5132', category: 'Modern Minimalist', hasPhoto: false, desc: 'Seafoam green name box, 3-column contact/summary/skills & banner strips', sortOrder: 17 },
 ]
 
 export function CreateResumePage() {
@@ -1302,7 +1139,7 @@ export function CreateResumePage() {
                             type="text"
                             value={templateSearch}
                             onChange={(e) => setTemplateSearch(e.target.value)}
-                            placeholder="Search 108 templates (e.g. Navy, Emerald, Bennett, Austin, Timeline)..."
+                            placeholder="Search 17 reference templates (e.g. Modern Navy, Foundation, Austin, Bennett)..."
                             className="w-full bg-black/40 border border-zinc-800 text-white text-xs rounded-lg pl-8 pr-7 py-1.5 outline-none focus:border-[#84cc16] transition-all"
                           />
                           <span className="absolute left-2.5 top-1.5 text-xs text-zinc-500">🔍</span>

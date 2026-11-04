@@ -51,11 +51,11 @@ public class AiResumeService {
     public EnhanceBulletResponse enhanceBullet(EnhanceBulletRequest request) {
         String systemInstruction = """
                 You are an elite technical resume writer and ATS optimization specialist.
-                Transform a weak or ordinary resume bullet point into a compelling, metric-driven accomplishment using the STAR (Situation, Task, Action, Result) method.
+                Transform a weak, brief, or ordinary resume bullet point into an articulate, substantial, and metric-driven accomplishment using the STAR (Situation, Task, Action, Result) framework.
                 Rules:
-                1. Always begin with a strong, past-tense action verb (e.g., Architected, Spearheaded, Engineered, Streamlined, Automated).
-                2. Quantify results with realistic metrics (e.g., percentages, latency reduction, user scale, hours saved).
-                3. Keep the length between 15 and 28 words.
+                1. Always begin with a strong, past-tense action verb (e.g., Architected, Spearheaded, Engineered, Streamlined, Automated, Orchestrated).
+                2. Nourish and elaborate the bullet with rich, professional English vocabulary, technical context, and quantifiable results (e.g., percentages, latency reduction, user scale, hours saved, cost efficiency).
+                3. Keep the length strictly between 25 and 35 words so the bullet looks complete, substantial, and fills the line cleanly on an A4 resume. Never shorten or truncate user details.
                 4. Never use first person ('I', 'we', 'my').
                 """;
 
@@ -95,9 +95,9 @@ public class AiResumeService {
     public GenerateSummaryResponse generateSummary(GenerateSummaryRequest request) {
         String systemInstruction = """
                 You are an executive resume strategist.
-                Generate a punchy, ATS-optimized professional summary for a candidate's resume.
+                Generate a comprehensive, ATS-optimized professional summary for a candidate's resume that conveys authority, technical depth, and tangible business impact.
                 Rules:
-                1. Length must be strictly between 35 and 55 words.
+                1. Length must be between 50 and 70 words, providing a substantial, complete paragraph that fills the summary section beautifully.
                 2. Highlight core expertise, tech stack, and quantifiable career impact.
                 3. Do not use buzzwords like 'hardworking', 'go-getter', or first-person pronouns ('I', 'me').
                 4. Tone should be confident, professional, and tailored to the requested tone.
@@ -228,22 +228,23 @@ public class AiResumeService {
         String systemInstruction = String.format("""
                 You are an elite ATS resume builder and professional career strategist.
                 Your task is to take the user's background notes, experience, skills, and target role,
-                and transform them into a comprehensive, ATS-optimized, high-impact resume draft.
+                and transform them into a comprehensive, ATS-optimized, high-impact, full-length resume draft.
 
                 Strict Rules:
                 1. Structure the response strictly conforming to the JSON schema.
                 2. Extract or infer:
                    - fullName, email, phone, location, linkedin, github, portfolio (use empty string if missing).
                    - title: e.g. "%s Resume" or role-based title.
-                   - templateId: "modern".
-                   - summary: 35-55 words, professional, active voice, punchy, tailored to the target role.
-                   - experience: array of companies with role, startDate, endDate, current flag, and 2-4 strong action-oriented, metric-driven accomplishment bullets (STAR method, starting with action verbs like Spearheaded, Engineered, Architected, Accelerated).
-                   - projects: key technical or business projects with techStack and outcome bullets.
+                   - templateId: "modern-02".
+                   - summary: 50-70 words, executive, active voice, rich, tailored to the target role, highlighting core technical mastery and business impact so it fills the summary block completely.
+                   - experience: array of companies with role, startDate, endDate, current flag, and 3-4 substantial, articulate accomplishment bullets per role (each strictly 25-35 words, using the STAR method, starting with high-impact power verbs like Spearheaded, Engineered, Architected, Orchestrated, Automated, and containing technical stack details and quantifiable results).
+                   - projects: key technical or business projects with techStack and 2-3 substantial outcome bullets (each 20-30 words).
                    - education: institution, degree, field, dates, score.
-                   - skills: relevant technical and professional skills as a clean list of strings.
+                   - skills: comprehensive technical stack with 12 to 20 relevant technical and professional skills as clean individual strings.
                    - certifications: professional certifications.
-                3. Generate 2 to 4 high-value follow-up questions ("questions") asking for missing metrics, team size, tools, or scope that would make the resume significantly stronger.
-                4. Never invent fake companies or degrees, but polish and professionally elevate the achievements described.
+                3. NOURISH and ELABORATE candidate input: Never shorten or truncate the user's experience. Use rich, articulate professional English to make the resume look full, authoritative, and complete on the page.
+                4. Generate 2 to 4 high-value follow-up questions ("questions") asking for missing metrics, team size, tools, or scope that would make the resume even stronger.
+                5. Never invent fake companies or degrees, but polish and professionally elevate the achievements described.
                 """, role);
 
         String userContent = String.format("""
@@ -275,10 +276,11 @@ public class AiResumeService {
                 You are an elite ATS resume writer and career coach.
                 You are refining an existing resume draft using the candidate's answers to clarifying questions.
                 Rules:
-                1. Incorporate the new metrics, team details, technologies, and achievements from the candidate's answers into the experience bullets and project bullets.
-                2. Strengthen action verbs and ATS keyword alignment.
-                3. Keep the resume structure clean and ATS-friendly.
-                4. Return the updated draft and an empty or minimal questions list.
+                1. NOURISH and ENRICH the resume: Seamlessly weave the new metrics, team details, technologies, and achievements from the candidate's answers into the experience bullets and project bullets.
+                2. Expand sparse bullets into substantial 25 to 35 word STAR accomplishments. Never remove, shorten, or truncate existing accomplishments.
+                3. Strengthen action verbs and ATS keyword alignment throughout.
+                4. Keep the resume structure clean, comprehensive, and ATS-friendly.
+                5. Return the updated draft and an empty or minimal questions list.
                 """;
 
         StringBuilder answersText = new StringBuilder();
@@ -487,11 +489,11 @@ public class AiResumeService {
                 3. Template:
                    - Set templateId to "modern-02" by default.
                 4. Summary:
-                   - Extract the professional summary/profile from the resume. If missing or brief, construct a high-impact 35-50 word professional summary synthesizing their career achievements.
+                   - Extract the professional summary/profile from the resume. If missing or brief, construct an executive-level 50-70 word professional summary synthesizing their career achievements, technical mastery, and business impact.
                 5. Work Experience:
                    - Extract all roles chronologically.
                    - Extract company name, role/title, startDate (e.g. "Jan 2021" or "2021"), endDate (or "Present"), and current flag.
-                   - bullets: Extract accomplishment bullets. Clean up bullet artifacts (like strange bullet characters or trailing broken lines). Reframe each bullet using strong past-tense action verbs (e.g. Engineered, Spearheaded, Architected, Optimized) and keep metrics (%, $, scale, users) intact.
+                   - bullets: Extract accomplishment bullets. Clean up bullet artifacts (like strange bullet characters or trailing broken lines). Reframe each bullet using strong past-tense action verbs (e.g. Engineered, Spearheaded, Architected, Optimized, Orchestrated) and keep metrics (%, $, scale, users) intact. Nourish and elaborate sparse phrases into articulate 25-35 word STAR accomplishment statements so the resume looks complete and full on the page.
                 6. Projects:
                    - Extract key technical projects, tech stack used, links (if present), and outcome bullets.
                 7. Education:
