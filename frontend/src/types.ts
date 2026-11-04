@@ -26,6 +26,9 @@ export interface TemplateInfo {
   hasPhoto?: boolean
   category?: string
   accentColor?: string
+  badge?: string
+  featured?: boolean
+  sortOrder?: number
 }
 
 export interface DraftPersonalInfo {

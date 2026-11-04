@@ -25,13 +25,22 @@ public class ResumeRenderService {
     public String renderHtml(Resume resume) {
         String templateId = resume != null ? resume.getTemplateId() : null;
         String id = registry.resolve(templateId);
+        TemplateRegistry.TemplateInfo info = registry.get(id);
 
         Context ctx = new Context();
         ctx.setVariable("resume", resume);
         ctx.setVariable("contacts", contacts(resume != null ? resume.getPersonalInfo() : null));
         ctx.setVariable("css", loadCss(id));
         String view = registry.getViewName(id);
-        return engine.process(view, ctx);
+        String html = engine.process(view, ctx);
+
+        if (info != null && info.accentColor() != null && info.baseAccentColor() != null) {
+            html = html.replace(info.baseAccentColor(), info.accentColor());
+            html = html.replace(info.baseAccentColor().toUpperCase(), info.accentColor());
+            html = html.replace(info.baseAccentColor().toLowerCase(), info.accentColor());
+        }
+
+        return html;
     }
 
     public byte[] renderPdf(Resume resume) {
@@ -62,6 +71,16 @@ public class ResumeRenderService {
         try (var in = new ClassPathResource("templates/resume/css/" + id + ".css").getInputStream()) {
             return new String(in.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {
+            TemplateRegistry.TemplateInfo info = registry.get(id);
+            if (info != null && info.baseCssId() != null && !info.baseCssId().equals(id)) {
+                String baseCss = loadCss(info.baseCssId());
+                if (info.accentColor() != null && info.baseAccentColor() != null) {
+                    baseCss = baseCss.replace(info.baseAccentColor(), info.accentColor());
+                    baseCss = baseCss.replace(info.baseAccentColor().toUpperCase(), info.accentColor());
+                    baseCss = baseCss.replace(info.baseAccentColor().toLowerCase(), info.accentColor());
+                }
+                return baseCss;
+            }
             throw new IllegalStateException("Missing CSS for template " + id, e);
         }
     }
