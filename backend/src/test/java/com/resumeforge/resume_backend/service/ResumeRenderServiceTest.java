@@ -61,6 +61,61 @@ class ResumeRenderServiceTest {
     }
 
     @Test
+    void testRenderNordicToPng() throws Exception {
+        List<String> templatesToVerify = List.of(
+                "nordic-earnshaw",
+                "split-navy",
+                "austin-yellow",
+                "teal-timeline",
+                "foundation-purple",
+                "sage-ramanathan"
+        );
+
+        for (String tId : templatesToVerify) {
+            Resume resume = new Resume();
+            resume.setTemplateId(tId);
+            resume.setTitle("Professional Resume");
+            resume.setPersonalInfo(new Resume.PersonalInfo(
+                    "Alex Smith", "alex@example.com", "+1234567890",
+                    "New York, NY", "linkedin.com/in/alexsmith",
+                    "github.com/alexsmith", "", null, "Senior Systems Architect"
+            ));
+            resume.setSummary("High-performing technology strategist with deep expertise in designing resilient, large-scale distributed architectures and mentoring high-growth engineering teams.");
+            resume.setSkills(List.of(
+                    "User Interface (UI)", "Figma", "HTML5 & CSS3", "JavaScript",
+                    "TypeScript", "React", "Storybook", "Wireframing",
+                    "High-Fidelity Prototyping", "Usability Testing", "User Research",
+                    "Adobe Illustrator", "Adobe Photoshop", "Micro-interactions"
+            ));
+            resume.setExperience(List.of(
+                    new Resume.Experience("PixelCraft Solutions", "Staff Design Engineer", "2021", "Present", true,
+                            List.of(
+                                    "Engineered high-performance enterprise UI components reducing bundle latency by 35% across web applications.",
+                                    "Orchestrated cross-functional collaboration across 14 engineers and design directors to deliver on milestones.",
+                                    "Designed comprehensive design tokens and micro-interactions adhering to strict WCAG 2.1 AA accessibility guidelines."
+                            ))
+            ));
+            resume.setProjects(List.of(
+                    new Resume.Project("Enterprise Design System & Token Architecture", "React, TypeScript, Storybook", "",
+                            List.of(
+                                    "Architected a scalable digital design system leveraging WCAG 2.1 AA accessibility standards and token pipelines.",
+                                    "Standardized 45+ UI primitives across multi-tenant cloud platforms reducing development cycle time by 40%."
+                            ))
+            ));
+
+            byte[] pdf = renderService.renderPdf(resume);
+            assertNotNull(pdf);
+            assertTrue(pdf.length > 0);
+
+            try (org.apache.pdfbox.pdmodel.PDDocument doc = org.apache.pdfbox.pdmodel.PDDocument.load(pdf)) {
+                org.apache.pdfbox.rendering.PDFRenderer renderer = new org.apache.pdfbox.rendering.PDFRenderer(doc);
+                java.awt.image.BufferedImage bim = renderer.renderImageWithDPI(0, 80);
+                javax.imageio.ImageIO.write(bim, "PNG", new java.io.File("target/" + tId + "-preview.png"));
+            }
+        }
+    }
+
+    @Test
     void testTemplateRegistry() {
         assertEquals(17, registry.all().size());
         assertTrue(registry.exists("modern-02"));

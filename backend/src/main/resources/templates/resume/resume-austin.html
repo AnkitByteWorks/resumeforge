@@ -9,7 +9,7 @@
   <table class="layout-table" style="width: 100%; border-collapse: collapse; height: 100%; min-height: 297mm;">
     <tr>
       <!-- LEFT DARK SIDEBAR -->
-      <td style="width: 35%; vertical-align: top; background-color: #18181b; color: #ffffff;">
+      <td class="sidebar-col" style="width: 35%; vertical-align: top; background-color: #18181b; color: #ffffff;">
         <!-- Photo Headshot -->
         <div th:if="${not #strings.isEmpty(resume.personalInfo.photoUrl())}" style="width: 100%; overflow: hidden;">
           <img th:src="${resume.personalInfo.photoUrl()}" alt="Photo" style="width: 100%; height: 130pt; object-fit: cover; display: block;"/>
@@ -61,7 +61,7 @@
       </td>
 
       <!-- RIGHT WHITE MAIN COLUMN -->
-      <td style="width: 65%; vertical-align: top; padding: 22pt 20pt;">
+      <td class="main-col" style="width: 65%; vertical-align: top; padding: 22pt 20pt;">
         <!-- Name with Yellow Highlighter -->
         <div style="margin-bottom: 14pt;">
           <h1 style="margin: 0; font-size: 24pt; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5pt; color: #09090b; line-height: 1.15;">

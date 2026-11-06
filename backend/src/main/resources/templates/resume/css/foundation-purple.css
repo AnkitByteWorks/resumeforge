@@ -1,16 +1,26 @@
 @page {
-  size: A4;
+  size: A4 portrait;
   margin: 10mm 12mm;
 }
-body {
-  font-family: 'Helvetica Neue', Arial, sans-serif;
-  color: #1e293b;
+html, body {
   margin: 0;
   padding: 0;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  color: #1e293b;
   background-color: #ffffff;
 }
 .foundation-body {
   background-color: #ffffff;
+}
+table.layout-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+table.layout-table tr {
+  vertical-align: top;
+}
+table.layout-table td {
+  vertical-align: top;
 }
 ul {
   padding-left: 14pt;

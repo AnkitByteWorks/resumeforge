@@ -9,7 +9,7 @@
   <table class="layout-table" style="width: 100%; border-collapse: collapse; height: 100%; min-height: 297mm;">
     <tr>
       <!-- LEFT DARK TEAL SIDEBAR -->
-      <td style="width: 32%; vertical-align: top; background-color: #083344; color: #ffffff; padding: 20pt 14pt;">
+      <td class="sidebar-col" style="width: 32%; vertical-align: top; background-color: #083344; color: #ffffff; padding: 20pt 14pt;">
         <!-- Circular Avatar with White Border -->
         <div style="text-align: center; margin-bottom: 14pt;">
           <img th:if="${not #strings.isEmpty(resume.personalInfo.photoUrl())}"
@@ -64,7 +64,7 @@
       </td>
 
       <!-- RIGHT WHITE MAIN COLUMN -->
-      <td style="width: 68%; vertical-align: top; padding: 20pt 20pt;">
+      <td class="main-col" style="width: 68%; vertical-align: top; padding: 20pt 20pt;">
         <!-- Header Name & Title -->
         <div style="margin-bottom: 12pt;">
           <h1 style="font-size: 22pt; font-weight: 800; text-transform: uppercase; margin: 0 0 2pt 0; letter-spacing: 0.5pt; color: #0f172a;"

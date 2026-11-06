@@ -1,13 +1,26 @@
 @page {
-  size: A4;
+  size: A4 portrait;
   margin: 0;
+}
+html {
+  margin: 0;
+  padding: 0;
+  height: 297mm;
 }
 body {
   font-family: 'Helvetica Neue', Arial, sans-serif;
   color: #1f2937;
   margin: 0;
   padding: 0;
+  height: 297mm;
   background-color: #ffffff;
+}
+.botanical-frame {
+  border-left: 10pt solid #164e63;
+  padding: 20pt 22pt;
+  min-height: 297mm;
+  height: 297mm;
+  box-sizing: border-box;
 }
 ul {
   padding-left: 14pt;

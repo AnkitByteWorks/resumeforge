@@ -1,13 +1,26 @@
 @page {
-  size: A4;
-  margin: 10mm 12mm;
+  size: A4 portrait;
+  margin: 10mm 10mm;
+}
+html {
+  margin: 0;
+  padding: 0;
+  height: 277mm;
 }
 body {
   font-family: 'Helvetica Neue', Arial, sans-serif;
   color: #18181b;
   margin: 0;
   padding: 0;
+  height: 277mm;
   background-color: #ffffff;
+}
+.parvati-frame {
+  border: 1px solid #27272a;
+  padding: 20pt 22pt;
+  min-height: 277mm;
+  height: 277mm;
+  box-sizing: border-box;
 }
 ul {
   padding-left: 12pt;

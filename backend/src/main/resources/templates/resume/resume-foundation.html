@@ -5,8 +5,8 @@
   <title th:text="${(not #strings.isEmpty(resume.personalInfo.fullName()) ? resume.personalInfo.fullName() : 'Resume') + ' - ResumeForge'}">Resume</title>
   <style th:utext="${css}"></style>
 </head>
-<body class="foundation-body" style="margin: 0; padding: 12mm 14mm 14mm 14mm; font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #ffffff; color: #1e293b; box-sizing: border-box; min-height: 297mm;">
-  <table class="layout-table" style="width: 100%; border-collapse: collapse; height: 100%; min-height: 270mm;">
+<body class="foundation-body" style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #ffffff; color: #1e293b;">
+  <table class="layout-table" style="width: 100%; border-collapse: collapse;">
     <tr style="height: 100%;">
       <!-- LEFT SIDEBAR -->
       <td class="sidebar-col" style="width: 32%; vertical-align: top; padding-right: 18pt; height: 100%;">

@@ -1,13 +1,22 @@
 @page {
-  size: A4;
-  margin: 10mm 12mm;
+  size: A4 portrait;
+  margin: 0;
+}
+html {
+  margin: 0;
+  padding: 0;
+  height: 297mm;
 }
 body {
   font-family: 'Helvetica Neue', Arial, sans-serif;
   color: #18181b;
   margin: 0;
-  padding: 0;
+  padding: 10mm 14mm 15mm 14mm;
+  height: 272mm;
+  min-height: 272mm;
+  box-sizing: border-box;
   background-color: #ffffff;
+  position: relative;
 }
 ul {
   padding-left: 12pt;

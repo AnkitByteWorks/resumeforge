@@ -1,12 +1,18 @@
 @page {
-  size: A4;
+  size: A4 portrait;
   margin: 10mm 12mm;
+}
+html {
+  margin: 0;
+  padding: 0;
+  height: 277mm;
 }
 body {
   font-family: 'Helvetica Neue', Arial, sans-serif;
   color: #1e293b;
   margin: 0;
   padding: 0;
+  height: 277mm;
   background-color: #ffffff;
 }
 ul {
