@@ -15,12 +15,20 @@ public record ResumeRequest(
         @Valid List<EducationDto> education,
         List<@NotBlank String> skills,
         List<@NotBlank String> certifications,
-        String pageDensity
+        String pageDensity,
+        String accentColor,
+        String fontFamily
 ) {
     public ResumeRequest(String title, String templateId, PersonalInfoDto personalInfo, String summary,
                          List<ExperienceDto> experience, List<ProjectDto> projects, List<EducationDto> education,
+                         List<String> skills, List<String> certifications, String pageDensity) {
+        this(title, templateId, personalInfo, summary, experience, projects, education, skills, certifications, pageDensity, null, null);
+    }
+
+    public ResumeRequest(String title, String templateId, PersonalInfoDto personalInfo, String summary,
+                         List<ExperienceDto> experience, List<ProjectDto> projects, List<EducationDto> education,
                          List<String> skills, List<String> certifications) {
-        this(title, templateId, personalInfo, summary, experience, projects, education, skills, certifications, "auto");
+        this(title, templateId, personalInfo, summary, experience, projects, education, skills, certifications, "auto", null, null);
     }
     public record PersonalInfoDto(
             @NotBlank @Size(max = 100) String fullName,

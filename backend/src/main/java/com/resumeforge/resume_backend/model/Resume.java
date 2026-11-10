@@ -34,6 +34,8 @@ public class Resume {
     private List<String> certifications = new ArrayList<>();
     private Integer atsScore;
     private String pageDensity = "auto";
+    private String accentColor;
+    private String fontFamily;
 
     @CreatedDate
     private Instant createdAt;

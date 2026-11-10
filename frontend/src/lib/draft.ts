@@ -63,5 +63,8 @@ export function cleanDraft(d: ResumeDraft): ResumeDraft {
       })),
     skills: cleanList(d.skills),
     certifications: cleanList(d.certifications),
+    pageDensity: d.pageDensity || 'auto',
+    accentColor: d.accentColor || undefined,
+    fontFamily: d.fontFamily || undefined,
   }
 }

@@ -18,6 +18,9 @@ class ResumeRenderServiceTest {
     @Autowired
     private TemplateRegistry registry;
 
+    @Autowired
+    private com.resumeforge.resume_backend.service.ai.AiResumeService aiResumeService;
+
     @Test
     void testRenderHtmlAndPdf() {
         Resume resume = new Resume();
@@ -241,5 +244,50 @@ class ResumeRenderServiceTest {
                 assertTrue(pdf.length > 0, "PDF should have bytes for " + t.id());
             }, "Failed rendering empty draft on template: " + t.id());
         }
+    }
+
+    @Test
+    void testCustomAccentColorAndFontAndDensity() {
+        Resume resume = new Resume();
+        resume.setTemplateId("split-navy");
+        resume.setUserId("user-custom");
+        resume.setTitle("Custom Styled Resume");
+        resume.setPersonalInfo(new Resume.PersonalInfo("Custom Candidate", "custom@example.com", "+123456789", "Boston, MA", "", "", ""));
+        resume.setAccentColor("#dc2626"); // Red
+        resume.setFontFamily("georgia");
+        resume.setPageDensity("compact");
+
+        String html = renderService.renderHtml(resume);
+        assertNotNull(html);
+        assertTrue(html.contains("#dc2626"), "Rendered HTML should contain custom red accent color");
+        assertTrue(html.contains("Georgia"), "Rendered HTML should contain custom Georgia font");
+        assertTrue(html.contains(".section { margin-bottom: 6pt !important; }"), "Rendered HTML should contain compact density rules");
+
+        byte[] pdf = renderService.renderPdf(resume);
+        assertNotNull(pdf);
+        assertTrue(pdf.length > 0);
+    }
+
+    @Test
+    void testCoverLetterGeneration() {
+        var req = new com.resumeforge.resume_backend.dto.ai.CoverLetterRequest(
+                "Ankit Sharma", "ankit@example.com", "+1234567890", "Bengaluru, India",
+                "Full Stack Developer", "Google", "Staff Software Engineer",
+                "Building high throughput cloud distributed systems",
+                "Experienced architect specializing in scalable microservices.",
+                List.of("Java", "Spring Boot", "Kubernetes", "GCP"),
+                List.of("Architected cloud migration for 50M users", "Reduced infrastructure spend by 28%"),
+                "confident"
+        );
+
+        var res = aiResumeService.generateCoverLetter(req);
+        assertNotNull(res);
+        assertNotNull(res.salutation());
+        assertTrue(res.salutation().contains("Google"));
+        assertNotNull(res.openingParagraph());
+        assertNotNull(res.bodyParagraph1());
+        assertNotNull(res.fullLetter());
+        assertTrue(res.fullLetter().contains("Google"));
+        assertTrue(res.fullLetter().contains("Ankit Sharma"));
     }
 }

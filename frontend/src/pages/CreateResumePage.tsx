@@ -11,9 +11,10 @@ import {
   tailorDraft,
   checkDraftAts,
   parseResumePdf,
+  generateCoverLetter,
 } from '../api/resumes'
 import { cleanDraft } from '../lib/draft'
-import type { ResumeDraft, EnhanceBulletResponse, TailorResumeResponse, AtsReport } from '../types'
+import type { ResumeDraft, EnhanceBulletResponse, TailorResumeResponse, AtsReport, CoverLetterResponse } from '../types'
 
 const STEPS = [
   { id: 1, name: 'Describe' },
@@ -60,6 +61,25 @@ const TEMPLATE_OPTIONS: Array<{
   { id: 'sky-warner', name: 'Emaa Sky Blue', color: '#0284c7', category: 'Photo & Creative', hasPhoto: true, desc: 'Pastel sky-blue geometric header block with circular photo & dark footer', sortOrder: 15 },
   { id: 'sage-ramanathan', name: 'Priya Sage', color: '#4a7048', category: 'Photo & Creative', hasPhoto: true, desc: 'Sage green circular icon badges & solid sage rounded banner headers', sortOrder: 16 },
   { id: 'seafoam-smith', name: 'Nelly Seafoam', color: '#0f5132', category: 'Modern Minimalist', hasPhoto: false, desc: 'Seafoam green name box, 3-column contact/summary/skills & banner strips', sortOrder: 17 },
+]
+
+const COLOR_PRESETS = [
+  { name: 'Template Default', hex: '', bg: 'transparent' },
+  { name: 'Deep Navy', hex: '#1e3a8a', bg: '#1e3a8a' },
+  { name: 'Emerald', hex: '#059669', bg: '#059669' },
+  { name: 'Royal Violet', hex: '#6d28d9', bg: '#6d28d9' },
+  { name: 'Ruby Red', hex: '#dc2626', bg: '#dc2626' },
+  { name: 'Corporate Slate', hex: '#334155', bg: '#334155' },
+  { name: 'Amber Gold', hex: '#d97706', bg: '#d97706' },
+  { name: 'Ocean Cyan', hex: '#0891b2', bg: '#0891b2' },
+  { name: 'Rose Quartz', hex: '#e11d48', bg: '#e11d48' },
+]
+
+const FONT_PRESETS = [
+  { id: 'sans', name: 'Inter (Modern Sans)', desc: 'Clean, versatile & maximum ATS compatibility' },
+  { id: 'serif', name: 'Georgia (Classic Serif)', desc: 'Elegant, distinguished editorial authority' },
+  { id: 'modern', name: 'Segoe UI (Corporate Clean)', desc: 'Crisp, contemporary tech aesthetic' },
+  { id: 'clean', name: 'Arial (Neutral ATS)', desc: 'Universal standard recognized by all parsers' },
 ]
 
 export function CreateResumePage() {
@@ -140,6 +160,20 @@ export function CreateResumePage() {
   const [jdError, setJdError] = useState<string | null>(null)
   const [atsReport, setAtsReport] = useState<AtsReport | null>(null)
   const [tailorResult, setTailorResult] = useState<TailorResumeResponse | null>(null)
+
+  // Feature: Page Break Guide
+  const [showPageBreakGuide, setShowPageBreakGuide] = useState(false)
+
+  // Feature: 1-Click AI Cover Letter
+  const [isCoverLetterModalOpen, setIsCoverLetterModalOpen] = useState(false)
+  const [clCompany, setClCompany] = useState('')
+  const [clRole, setClRole] = useState('')
+  const [clJd, setClJd] = useState('')
+  const [clTone, setClTone] = useState<'professional' | 'enthusiastic' | 'executive'>('professional')
+  const [isGeneratingCl, setIsGeneratingCl] = useState(false)
+  const [clResult, setClResult] = useState<CoverLetterResponse | null>(null)
+  const [clEditedText, setClEditedText] = useState('')
+  const [clCopied, setClCopied] = useState(false)
 
   // Skills input state
   const [newSkillInput, setNewSkillInput] = useState('')
@@ -286,6 +320,61 @@ export function CreateResumePage() {
       ...draft,
       experience: newExp,
     })
+  }
+
+  // --- COVER LETTER HANDLERS ---
+  const handleOpenCoverLetter = () => {
+    if (!clRole && (draft?.personalInfo?.headline || targetRole)) {
+      setClRole(draft?.personalInfo?.headline || targetRole || '')
+    }
+    setIsCoverLetterModalOpen(true)
+  }
+
+  const handleGenerateCoverLetter = async () => {
+    if (!clCompany.trim() || !clRole.trim()) {
+      alert('Please provide both a Company Name and Target Role.')
+      return
+    }
+    setIsGeneratingCl(true)
+    try {
+      const res = await generateCoverLetter({
+        candidateName: draft?.personalInfo?.fullName || user?.name || 'Applicant',
+        candidateEmail: draft?.personalInfo?.email || user?.email || '',
+        candidatePhone: draft?.personalInfo?.phone || '',
+        candidateLocation: draft?.personalInfo?.location || '',
+        currentRole: draft?.personalInfo?.headline || targetRole || '',
+        companyName: clCompany.trim(),
+        jobTitle: clRole.trim(),
+        jobDescription: clJd.trim() || undefined,
+        resumeSummary: draft?.summary || '',
+        skills: draft?.skills || [],
+        experienceHighlights: draft?.experience?.flatMap((e) => e.bullets || []).slice(0, 5) || [],
+        tone: clTone,
+      })
+      setClResult(res)
+      setClEditedText(res.fullLetter)
+    } catch (err) {
+      console.error('Failed to generate cover letter', err)
+      alert('Cover letter generation failed: ' + (err instanceof Error ? err.message : 'Unknown error'))
+    } finally {
+      setIsGeneratingCl(false)
+    }
+  }
+
+  const handleCopyCoverLetter = () => {
+    navigator.clipboard.writeText(clEditedText)
+    setClCopied(true)
+    setTimeout(() => setClCopied(false), 2000)
+  }
+
+  const handleDownloadCoverLetter = () => {
+    const blob = new Blob([clEditedText], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `Cover_Letter_${clCompany.trim().replace(/\s+/g, '_')}.txt`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   // --- PREVIEW HANDLER ---
@@ -1008,6 +1097,14 @@ export function CreateResumePage() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
+                onClick={handleOpenCoverLetter}
+                className="flex items-center gap-1.5 bg-gradient-to-r from-emerald-600/30 to-teal-600/30 hover:from-emerald-600/50 hover:to-teal-600/50 text-emerald-200 border border-emerald-500/40 text-xs font-semibold px-3 py-2 rounded-lg transition-all cursor-pointer shadow-sm hover:border-emerald-400"
+                title="Generate a tailored Cover Letter for this resume"
+              >
+                <span>✉️ Cover Letter</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => setIsJdModalOpen(true)}
                 className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600/30 to-blue-600/30 hover:from-purple-600/50 hover:to-blue-600/50 text-purple-200 border border-purple-500/40 text-xs font-semibold px-3 py-2 rounded-lg transition-all cursor-pointer shadow-sm hover:border-purple-400"
               >
@@ -1228,6 +1325,127 @@ export function CreateResumePage() {
                               </button>
                             )
                           })}
+                        </div>
+
+                        {/* --- DESIGN CUSTOMIZATION CONTROLS --- */}
+                        <div className="pt-3 border-t border-white/10 space-y-4">
+                          {/* Accent Color Palette */}
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs font-semibold text-white flex items-center gap-1.5">
+                                <span>🎨 Accent Color</span>
+                              </span>
+                              <span className="text-[11px] text-zinc-400 font-mono">
+                                {draft.accentColor || 'Template Default'}
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              {COLOR_PRESETS.map((c) => {
+                                const isCurrent = (!draft.accentColor && !c.hex) || (draft.accentColor?.toLowerCase() === c.hex.toLowerCase())
+                                return (
+                                  <button
+                                    key={c.name}
+                                    type="button"
+                                    onClick={() => handleDraftChange({ ...draft, accentColor: c.hex || undefined })}
+                                    title={c.name + (c.hex ? ` (${c.hex})` : '')}
+                                    className={`relative w-7 h-7 rounded-full transition-all cursor-pointer flex items-center justify-center ${
+                                      isCurrent
+                                        ? 'ring-2 ring-[#84cc16] ring-offset-2 ring-offset-zinc-900 scale-110'
+                                        : 'hover:scale-105 opacity-80 hover:opacity-100'
+                                    }`}
+                                    style={{
+                                      backgroundColor: c.bg === 'transparent' ? '#3f3f46' : c.bg,
+                                      border: c.bg === 'transparent' ? '1px dashed #71717a' : '1px solid rgba(255,255,255,0.2)',
+                                    }}
+                                  >
+                                    {!c.hex && <span className="text-[9px] text-zinc-300 font-bold">DEF</span>}
+                                    {isCurrent && c.hex && (
+                                      <span className="text-white text-xs font-black drop-shadow">✓</span>
+                                    )}
+                                  </button>
+                                )
+                              })}
+                              {/* Custom Color Input */}
+                              <label
+                                title="Custom Hex Color"
+                                className="relative w-7 h-7 rounded-full border border-white/30 cursor-pointer overflow-hidden flex items-center justify-center bg-gradient-to-tr from-pink-500 via-purple-500 to-indigo-500 hover:scale-105 transition-transform"
+                              >
+                                <input
+                                  type="color"
+                                  value={draft.accentColor || '#1e3a8a'}
+                                  onChange={(e) => handleDraftChange({ ...draft, accentColor: e.target.value })}
+                                  className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                                />
+                                <span className="text-[10px] text-white font-bold drop-shadow">+</span>
+                              </label>
+                            </div>
+                          </div>
+
+                          {/* Font Family Selector */}
+                          <div>
+                            <span className="text-xs font-semibold text-white block mb-2">
+                              🔤 Typography &amp; Font Family
+                            </span>
+                            <div className="grid grid-cols-2 gap-2">
+                              {FONT_PRESETS.map((f) => {
+                                const isCurrent = (!draft.fontFamily && f.id === 'sans') || draft.fontFamily === f.id
+                                return (
+                                  <button
+                                    key={f.id}
+                                    type="button"
+                                    onClick={() => handleDraftChange({ ...draft, fontFamily: f.id })}
+                                    className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
+                                      isCurrent
+                                        ? 'bg-[#84cc16]/10 border-[#84cc16] text-white shadow-sm ring-1 ring-[#84cc16]'
+                                        : 'bg-white/[0.03] border-white/10 text-zinc-400 hover:text-white hover:bg-white/[0.06]'
+                                    }`}
+                                  >
+                                    <div className="text-xs font-medium text-white flex items-center justify-between">
+                                      <span>{f.name}</span>
+                                      {isCurrent && <span className="text-[#84cc16] text-[11px] font-bold">✓</span>}
+                                    </div>
+                                    <p className="text-[10px] text-zinc-400 mt-0.5 line-clamp-1">{f.desc}</p>
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Page Spacing / Density (1-Page Fit) */}
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs font-semibold text-white flex items-center gap-1.5">
+                                <span>📐 Page Density (A4 Fit Control)</span>
+                              </span>
+                              <span className="text-[10px] text-emerald-400 font-medium">
+                                {draft.pageDensity === 'compact' ? '⚡ 20% More Content Fits' : 'Default Margins'}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 bg-black/40 p-1 rounded-lg border border-white/10">
+                              {[
+                                { id: 'compact', label: 'Compact', desc: 'Tight margins & lines' },
+                                { id: 'auto', label: 'Normal', desc: 'Balanced spacing' },
+                                { id: 'spacious', label: 'Spacious', desc: 'Relaxed margins' },
+                              ].map((d) => {
+                                const isCurrent = (!draft.pageDensity && d.id === 'auto') || draft.pageDensity === d.id
+                                return (
+                                  <button
+                                    key={d.id}
+                                    type="button"
+                                    onClick={() => handleDraftChange({ ...draft, pageDensity: d.id as any })}
+                                    className={`py-1.5 px-2 rounded-md text-xs font-medium transition-all cursor-pointer text-center ${
+                                      isCurrent
+                                        ? 'bg-[#84cc16] text-black font-semibold shadow'
+                                        : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                                    }`}
+                                  >
+                                    <div>{d.label}</div>
+                                    <div className={`text-[9px] ${isCurrent ? 'text-black/70 font-normal' : 'text-zinc-500'}`}>{d.desc}</div>
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -1728,19 +1946,46 @@ export function CreateResumePage() {
         >
           {/* Header Bar */}
           <div className="w-full flex items-center justify-between mb-3 px-1 z-10">
-            <span className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              Live A4 Preview
-            </span>
-            <div className="bg-zinc-900/90 backdrop-blur-md text-zinc-300 text-[11px] px-2.5 py-1 rounded-full border border-white/10 flex items-center gap-2">
-              {isPreviewLoading ? (
-                <>
-                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Rendering...</span>
-                </>
-              ) : (
-                <span>A4 Sheet ({Math.round(previewScale * 100)}%)</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Live A4 Preview
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowPageBreakGuide((prev) => !prev)}
+                className={`text-[10px] px-2 py-0.5 rounded-full border transition-all cursor-pointer flex items-center gap-1 ${
+                  showPageBreakGuide
+                    ? 'bg-amber-500/20 text-amber-200 border-amber-500/40 font-medium'
+                    : 'bg-white/5 text-zinc-400 border-white/10 hover:text-white'
+                }`}
+                title="Toggle visual page boundary guide"
+              >
+                <span>✂️ Page Cut Guide</span>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {draft.pageDensity !== 'compact' && (
+                <button
+                  type="button"
+                  onClick={() => handleDraftChange({ ...draft, pageDensity: 'compact' })}
+                  className="bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-500/30 text-[10px] px-2 py-0.5 rounded-full transition-all cursor-pointer flex items-center gap-1"
+                  title="Tighten spacing to guarantee 1-page fit"
+                >
+                  <span>⚡ Fit to 1 Page</span>
+                </button>
               )}
+              <div className="bg-zinc-900/90 backdrop-blur-md text-zinc-300 text-[11px] px-2.5 py-1 rounded-full border border-white/10 flex items-center gap-2">
+                {isPreviewLoading ? (
+                  <>
+                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Rendering...</span>
+                  </>
+                ) : (
+                  <span>A4 Sheet ({Math.round(previewScale * 100)}%)</span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -1754,7 +1999,7 @@ export function CreateResumePage() {
                   flexShrink: 0,
                   transition: 'width 0.15s ease-out, height 0.15s ease-out',
                 }}
-                className="shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] rounded-sm overflow-hidden"
+                className="shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] rounded-sm overflow-hidden relative"
               >
                 <iframe
                   srcDoc={previewHtmlString}
@@ -1769,6 +2014,24 @@ export function CreateResumePage() {
                   }}
                   title="Resume Preview"
                 />
+
+                {/* Page Break Guide Marker */}
+                {showPageBreakGuide && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: `${1123 * previewScale - 4}px`,
+                      left: 0,
+                      right: 0,
+                    }}
+                    className="z-30 pointer-events-none flex items-center justify-center"
+                  >
+                    <div className="w-full border-b-2 border-dashed border-red-500/90 shadow-md" />
+                    <span className="absolute bg-red-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-lg">
+                      ✂️ A4 Page 1 End (297mm)
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           ) : previewError ? (
@@ -2046,6 +2309,197 @@ export function CreateResumePage() {
               >
                 Done
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- 1-Click AI Cover Letter Generator Modal --- */}
+      {isCoverLetterModalOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#121215] border border-white/15 rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-black/40">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">✉️</span>
+                <div>
+                  <h3 className="text-lg font-bold text-white leading-tight">1-Click AI Cover Letter Generator</h3>
+                  <p className="text-xs text-zinc-400">Transform your resume experience into an articulate, tailored cover letter</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCoverLetterModalOpen(false)}
+                className="text-zinc-400 hover:text-white text-lg p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 overflow-y-auto space-y-5 custom-scrollbar">
+              {!clResult ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-semibold text-zinc-300 block mb-1.5">
+                        Target Company <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={clCompany}
+                        onChange={(e) => setClCompany(e.target.value)}
+                        placeholder="e.g. Google, Stripe, Microsoft, Razorpay"
+                        className="w-full bg-black/40 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:border-[#84cc16] outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-zinc-300 block mb-1.5">
+                        Target Role / Job Title <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={clRole}
+                        onChange={(e) => setClRole(e.target.value)}
+                        placeholder="e.g. Senior Software Engineer"
+                        className="w-full bg-black/40 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:border-[#84cc16] outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-zinc-300 block mb-1.5">
+                      Target Job Description (Optional, Recommended for ATS alignment)
+                    </label>
+                    <textarea
+                      value={clJd}
+                      onChange={(e) => setClJd(e.target.value)}
+                      placeholder="Paste key responsibilities or requirements from the job posting..."
+                      rows={4}
+                      className="w-full bg-black/40 border border-zinc-800 rounded-lg p-3 text-xs text-white focus:border-[#84cc16] outline-none resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-zinc-300 block mb-2">Writing Tone</label>
+                    <div className="grid grid-cols-3 gap-2.5">
+                      {[
+                        { id: 'professional', label: '👔 Confident & Professional', desc: 'Authoritative, clear & metric-driven' },
+                        { id: 'enthusiastic', label: '🚀 Enthusiastic & Driven', desc: 'High energy, passion for mission' },
+                        { id: 'executive', label: '💎 Executive & Strategic', desc: 'Leadership, scale & ROI focus' },
+                      ].map((t) => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => setClTone(t.id as any)}
+                          className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                            clTone === t.id
+                              ? 'bg-[#84cc16]/10 border-[#84cc16] text-white shadow-sm ring-1 ring-[#84cc16]'
+                              : 'bg-white/[0.03] border-white/10 text-zinc-400 hover:text-white'
+                          }`}
+                        >
+                          <div className="text-xs font-semibold text-white">{t.label}</div>
+                          <div className="text-[10px] text-zinc-400 mt-0.5">{t.desc}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleGenerateCoverLetter}
+                      disabled={isGeneratingCl || !clCompany.trim() || !clRole.trim()}
+                      className="bg-[#84cc16] hover:bg-[#65a30d] text-black font-semibold text-xs px-5 py-2.5 rounded-lg transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {isGeneratingCl ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                          <span>Generating Cover Letter...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>✨ Generate Cover Letter</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-emerald-950/30 border border-emerald-500/30 rounded-xl">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">✅</span>
+                      <div>
+                        <span className="text-xs font-bold text-emerald-300">
+                          Cover Letter Generated for {clCompany}
+                        </span>
+                        <p className="text-[11px] text-zinc-400">Position: {clRole} • Tone: {clTone}</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setClResult(null)}
+                      className="text-xs text-zinc-400 hover:text-white underline cursor-pointer"
+                    >
+                      Edit Inputs / Regenerate
+                    </button>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-zinc-300">
+                        Editable Cover Letter ({clEditedText.split(/\s+/).filter(Boolean).length} words)
+                      </span>
+                      <span className="text-[10px] text-zinc-500">Click below to make any fine adjustments</span>
+                    </div>
+                    <textarea
+                      value={clEditedText}
+                      onChange={(e) => setClEditedText(e.target.value)}
+                      rows={14}
+                      className="w-full bg-black/60 border border-zinc-800 rounded-xl p-4 text-xs text-zinc-200 font-serif leading-relaxed focus:border-[#84cc16] outline-none resize-none shadow-inner custom-scrollbar"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleCopyCoverLetter}
+                        className="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5"
+                      >
+                        {clCopied ? (
+                          <>
+                            <span className="text-[#84cc16]">✓</span>
+                            <span>Copied to Clipboard!</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>📋</span>
+                            <span>Copy Letter</span>
+                          </>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDownloadCoverLetter}
+                        className="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5"
+                      >
+                        <span>⬇️</span>
+                        <span>Download (.txt)</span>
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsCoverLetterModalOpen(false)}
+                      className="px-4 py-2 bg-[#84cc16] hover:bg-[#65a30d] text-black rounded-lg text-xs font-semibold transition-all cursor-pointer"
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

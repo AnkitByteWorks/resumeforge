@@ -3,6 +3,8 @@ import type {
   AiAnswer,
   AiDraftResult,
   AtsReport,
+  CoverLetterRequest,
+  CoverLetterResponse,
   EnhanceBulletRequest,
   EnhanceBulletResponse,
   ResumeDraft,
@@ -169,5 +171,12 @@ export function checkDraftAts(draft: ResumeDraft, jobDescription?: string): Prom
   return api<AtsReport>('/api/v1/resumes/draft-ats-check', {
     method: 'POST',
     body: { draft, jobDescription: jobDescription || null },
+  })
+}
+
+export function generateCoverLetter(params: CoverLetterRequest): Promise<CoverLetterResponse> {
+  return api<CoverLetterResponse>('/api/v1/ai/cover-letter', {
+    method: 'POST',
+    body: params,
   })
 }

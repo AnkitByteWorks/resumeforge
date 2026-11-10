@@ -48,6 +48,16 @@ public class AiResumeService {
             String overallAdvice
     ) {}
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record CoverLetterAiResult(
+            String salutation,
+            String openingParagraph,
+            String bodyParagraph1,
+            String bodyParagraph2,
+            String closingParagraph,
+            String signOff
+    ) {}
+
     public EnhanceBulletResponse enhanceBullet(EnhanceBulletRequest request) {
         String systemInstruction = """
                 You are an elite technical resume writer and ATS optimization specialist.
@@ -777,5 +787,114 @@ public class AiResumeService {
             default -> {
             }
         }
+    }
+
+    public CoverLetterResponse generateCoverLetter(CoverLetterRequest request) {
+        String candidateName = request.candidateName() != null && !request.candidateName().isBlank()
+                ? request.candidateName() : "Applicant";
+        String company = request.companyName() != null && !request.companyName().isBlank()
+                ? request.companyName() : "the Company";
+        String jobTitle = request.jobTitle() != null && !request.jobTitle().isBlank()
+                ? request.jobTitle() : "Position";
+        String tone = request.tone() != null && !request.tone().isBlank()
+                ? request.tone() : "professional";
+
+        String systemInstruction = String.format("""
+                You are an executive talent consultant and high-impact career writer.
+                Craft an exceptional, compelling, ATS-optimized Cover Letter for a candidate applying to a target job and company.
+                Rules:
+                1. Structure:
+                   - Salutation: Addressed professionally to the hiring team at the company (e.g. "Dear Hiring Manager," or "Dear %s Team,").
+                   - Opening Paragraph: Strong, engaging hook that states the exact target role, shows genuine enthusiasm and alignment with the company, and previews the candidate's core value proposition (40-60 words).
+                   - Body Paragraph 1: Highlight technical depth, domain expertise, and quantifiable high-impact accomplishments from the candidate's background that directly solve problems for the company (70-100 words).
+                   - Body Paragraph 2: Showcase collaboration, leadership, problem-solving mindset, and strong cultural alignment with the team (60-80 words).
+                   - Closing Paragraph: Confident, gracious call to action expressing eagerness to discuss how the candidate will drive immediate results (40-50 words).
+                   - Sign-off: Elegant sign-off including the candidate's name (e.g. "Sincerely,\\n%s").
+                2. Tone: Confident, articulate, substantive, and tailored to the requested tone (%s).
+                3. Never use generic buzzwords or clichés like "I am a hard worker". Use strong action verbs and concrete value.
+                """, company, candidateName, tone);
+
+        String userContent = String.format("""
+                Candidate Name: %s
+                Target Role: %s
+                Target Company: %s
+                Candidate Background / Headline: %s
+                Resume Summary: %s
+                Key Skills: %s
+                Experience Highlights: %s
+                Job Description / Requirements: %s
+                """,
+                candidateName,
+                jobTitle,
+                company,
+                request.currentRole() != null ? request.currentRole() : "",
+                request.resumeSummary() != null ? request.resumeSummary() : "",
+                request.skills() != null ? String.join(", ", request.skills()) : "",
+                request.experienceHighlights() != null ? String.join("\n- ", request.experienceHighlights()) : "",
+                request.jobDescription() != null ? request.jobDescription() : "N/A"
+        );
+
+        Map<String, Object> schema = Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "salutation", Map.of("type", "string"),
+                        "openingParagraph", Map.of("type", "string"),
+                        "bodyParagraph1", Map.of("type", "string"),
+                        "bodyParagraph2", Map.of("type", "string"),
+                        "closingParagraph", Map.of("type", "string"),
+                        "signOff", Map.of("type", "string")
+                ),
+                "required", List.of("salutation", "openingParagraph", "bodyParagraph1", "bodyParagraph2", "closingParagraph", "signOff")
+        );
+
+        CoverLetterAiResult result;
+        try {
+            result = geminiClient.generate(systemInstruction, userContent, schema, CoverLetterAiResult.class);
+        } catch (Exception e) {
+            log.warn("Gemini cover letter generation unavailable or failed, generating smart fallback: {}", e.getMessage());
+            result = generateFallbackCoverLetter(request, candidateName, company, jobTitle);
+        }
+
+        String full = String.join("\n\n",
+                result.salutation(),
+                result.openingParagraph(),
+                result.bodyParagraph1(),
+                result.bodyParagraph2(),
+                result.closingParagraph(),
+                result.signOff()
+        );
+
+        return new CoverLetterResponse(
+                result.salutation(),
+                result.openingParagraph(),
+                result.bodyParagraph1(),
+                result.bodyParagraph2(),
+                result.closingParagraph(),
+                result.signOff(),
+                full
+        );
+    }
+
+    private CoverLetterAiResult generateFallbackCoverLetter(CoverLetterRequest request, String candidateName, String company, String jobTitle) {
+        String skillsStr = (request.skills() != null && !request.skills().isEmpty())
+                ? String.join(", ", request.skills().stream().limit(5).toList())
+                : "enterprise system design and problem solving";
+
+        String salutation = "Dear Hiring Team at " + company + ",";
+
+        String opening = "I am writing to express my enthusiastic interest in the " + jobTitle + " position at " + company +
+                ". With a proven track record of engineering scalable solutions and driving measurable business outcomes, I am excited by the prospect of contributing my technical expertise and passion for innovation to your high-performing team.";
+
+        String body1 = "Throughout my professional journey, I have specialized in architecting resilient systems, optimizing complex workflows, and deploying high-performance applications leveraging " +
+                skillsStr + ". In my recent roles, I have consistently spearheaded key technical initiatives that improved efficiency, accelerated delivery timelines, and maintained rigorous quality standards. I take pride in transforming ambiguous problems into robust, production-grade solutions.";
+
+        String body2 = "Beyond technical execution, I excel in cross-functional collaboration, mentoring team members, and aligning engineering deliverables with overarching organizational goals. I admire " +
+                company + "'s commitment to excellence and innovation, and I am confident that my strategic mindset and proactive approach will enable me to make an immediate, meaningful impact.";
+
+        String closing = "Thank you for your time and consideration. I would welcome the opportunity to discuss how my experience and skill set align with your team's objectives in greater detail.";
+
+        String signOff = "Sincerely,\n" + candidateName;
+
+        return new CoverLetterAiResult(salutation, opening, body1, body2, closing, signOff);
     }
 }

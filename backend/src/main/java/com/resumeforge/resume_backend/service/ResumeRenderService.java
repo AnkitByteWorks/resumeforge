@@ -30,17 +30,75 @@ public class ResumeRenderService {
         Context ctx = new Context();
         ctx.setVariable("resume", resume);
         ctx.setVariable("contacts", contacts(resume != null ? resume.getPersonalInfo() : null));
-        ctx.setVariable("css", loadCss(id));
+        
+        String css = loadCss(id) + "\n" + buildCustomStyles(resume);
+        ctx.setVariable("css", css);
         String view = registry.getViewName(id);
         String html = engine.process(view, ctx);
 
-        if (info != null && info.accentColor() != null && info.baseAccentColor() != null) {
+        String customAccent = (resume != null && resume.getAccentColor() != null && !resume.getAccentColor().isBlank())
+                ? resume.getAccentColor().trim()
+                : null;
+        if (customAccent != null && info != null && info.accentColor() != null) {
+            String orig = info.accentColor();
+            html = html.replace(orig, customAccent);
+            html = html.replace(orig.toUpperCase(), customAccent);
+            html = html.replace(orig.toLowerCase(), customAccent);
+        } else if (info != null && info.accentColor() != null && info.baseAccentColor() != null) {
             html = html.replace(info.baseAccentColor(), info.accentColor());
             html = html.replace(info.baseAccentColor().toUpperCase(), info.accentColor());
             html = html.replace(info.baseAccentColor().toLowerCase(), info.accentColor());
         }
 
         return html;
+    }
+
+    private String buildCustomStyles(Resume resume) {
+        if (resume == null) return "";
+        StringBuilder sb = new StringBuilder();
+
+        // Custom Font Family
+        if (resume.getFontFamily() != null && !resume.getFontFamily().isBlank()) {
+            String font = resolveFontFamily(resume.getFontFamily().trim());
+            sb.append("body, p, td, li, span, h1, h2, h3, h4, h5, h6, div { font-family: ")
+              .append(font)
+              .append(" !important; }\n");
+        }
+
+        // Custom Page Density / Spacing
+        String density = resume.getPageDensity() != null ? resume.getPageDensity().trim().toLowerCase() : "auto";
+        if ("compact".equals(density)) {
+            sb.append("""
+                .section { margin-bottom: 6pt !important; }
+                .entry { margin-bottom: 4pt !important; }
+                p, li { line-height: 1.25 !important; font-size: 8pt !important; }
+                ul { margin-top: 1pt !important; margin-bottom: 1pt !important; }
+                h1 { font-size: 18pt !important; }
+                h2 { font-size: 9.5pt !important; margin-bottom: 3pt !important; }
+                h3 { font-size: 8.5pt !important; margin-bottom: 2pt !important; }
+            """);
+        } else if ("spacious".equals(density)) {
+            sb.append("""
+                .section { margin-bottom: 16pt !important; }
+                .entry { margin-bottom: 12pt !important; }
+                p, li { line-height: 1.55 !important; font-size: 9.5pt !important; }
+                h1 { font-size: 24pt !important; }
+                h2 { font-size: 11.5pt !important; margin-bottom: 8pt !important; }
+                h3 { font-size: 10.5pt !important; margin-bottom: 6pt !important; }
+            """);
+        }
+
+        return sb.toString();
+    }
+
+    private String resolveFontFamily(String fontKey) {
+        return switch (fontKey.toLowerCase()) {
+            case "serif", "georgia" -> "'Georgia', 'Times New Roman', serif";
+            case "sans", "inter" -> "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+            case "modern", "segoe" -> "'Segoe UI', 'Helvetica Neue', Arial, sans-serif";
+            case "clean", "arial" -> "'Arial', 'Helvetica Neue', sans-serif";
+            default -> fontKey;
+        };
     }
 
     public byte[] renderPdf(Resume resume) {

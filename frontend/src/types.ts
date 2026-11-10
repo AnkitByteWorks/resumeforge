@@ -78,7 +78,34 @@ export interface ResumeDraft {
   education: DraftEducation[]
   skills: string[]
   certifications: string[]
-  pageDensity?: 'auto' | 'spacious' | 'balanced' | 'compact' | 'ultra_compact'
+  pageDensity?: 'auto' | 'spacious' | 'balanced' | 'compact' | 'ultra_compact' | string
+  accentColor?: string
+  fontFamily?: string
+}
+
+export interface CoverLetterRequest {
+  candidateName?: string
+  candidateEmail?: string
+  candidatePhone?: string
+  candidateLocation?: string
+  currentRole?: string
+  companyName: string
+  jobTitle: string
+  jobDescription?: string
+  resumeSummary?: string
+  skills?: string[]
+  experienceHighlights?: string[]
+  tone?: string
+}
+
+export interface CoverLetterResponse {
+  salutation: string
+  openingParagraph: string
+  bodyParagraph1: string
+  bodyParagraph2: string
+  closingParagraph: string
+  signOff: string
+  fullLetter: string
 }
 
 export interface AiQuestion {

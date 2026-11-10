@@ -67,4 +67,9 @@ public class AiController {
             @RequestParam(value = "targetRole", required = false) String targetRole) {
         return aiResumeService.parseResumeFromFile(file, targetRole);
     }
+
+    @PostMapping("/cover-letter")
+    public CoverLetterResponse generateCoverLetter(@Valid @RequestBody CoverLetterRequest request) {
+        return aiResumeService.generateCoverLetter(request);
+    }
 }

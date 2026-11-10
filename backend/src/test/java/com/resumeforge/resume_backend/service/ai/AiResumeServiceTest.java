@@ -65,4 +65,28 @@ class AiResumeServiceTest {
             System.err.println("Gemini service unavailable during test: " + e.getMessage());
         }
     }
+
+    @Test
+    void testGenerateCoverLetter() {
+        com.resumeforge.resume_backend.dto.ai.CoverLetterRequest req = new com.resumeforge.resume_backend.dto.ai.CoverLetterRequest(
+                "Ankit Sharma", "ankit@example.com", "+1234567890", "Bengaluru, India",
+                "Full Stack Developer", "Stripe", "Senior Software Engineer",
+                "Building payment systems and scalable backend microservices",
+                "Experienced software engineer specializing in scalable distributed backends.",
+                List.of("Java", "Spring Boot", "React", "Kafka"),
+                List.of("Reduced latency by 40%", "Engineered multi-region failover cluster"),
+                "confident"
+        );
+
+        com.resumeforge.resume_backend.dto.ai.CoverLetterResponse res = aiResumeService.generateCoverLetter(req);
+        assertNotNull(res);
+        assertNotNull(res.salutation());
+        assertNotNull(res.openingParagraph());
+        assertNotNull(res.bodyParagraph1());
+        assertNotNull(res.bodyParagraph2());
+        assertNotNull(res.closingParagraph());
+        assertNotNull(res.signOff());
+        assertNotNull(res.fullLetter());
+        assertTrue(res.fullLetter().contains("Stripe"));
+    }
 }

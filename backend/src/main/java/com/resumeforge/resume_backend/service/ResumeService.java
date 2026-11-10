@@ -62,6 +62,8 @@ public class ResumeService {
         r.setTitle(q.title());
         r.setTemplateId(q.templateId());
         r.setPageDensity(q.pageDensity() != null ? q.pageDensity() : "auto");
+        r.setAccentColor(q.accentColor());
+        r.setFontFamily(q.fontFamily());
         var p = q.personalInfo();
         r.setPersonalInfo(new Resume.PersonalInfo(p.fullName(), p.email(), p.phone(),
                 p.location(), p.linkedin(), p.github(), p.portfolio(), p.photoUrl(), p.headline()));
