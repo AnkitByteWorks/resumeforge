@@ -21,6 +21,9 @@ class ResumeRenderServiceTest {
     @Autowired
     private com.resumeforge.resume_backend.service.ai.AiResumeService aiResumeService;
 
+    @Autowired
+    private ResumeService resumeService;
+
     @Test
     void testRenderHtmlAndPdf() {
         Resume resume = new Resume();
@@ -289,5 +292,43 @@ class ResumeRenderServiceTest {
         assertNotNull(res.fullLetter());
         assertTrue(res.fullLetter().contains("Google"));
         assertTrue(res.fullLetter().contains("Ankit Sharma"));
+    }
+
+    @Test
+    void testShareResumeAndGetPublic() {
+        var createReq = new com.resumeforge.resume_backend.dto.ResumeRequest(
+                "Public Shareable Resume", "modern-02",
+                new com.resumeforge.resume_backend.dto.ResumeRequest.PersonalInfoDto(
+                        "Priya Public", "priya@example.com", "+1234567890", "San Jose, CA", "linkedin.com/in/priya", "github.com/priya", ""
+                ),
+                "Experienced Cloud Architect with deep expertise in multi-region failovers.",
+                List.of(new com.resumeforge.resume_backend.dto.ResumeRequest.ExperienceDto("Google", "Staff Architect", "2020", "Present", true, List.of("Scaled cloud infrastructure by 300%"))),
+                List.of(),
+                List.of(new com.resumeforge.resume_backend.dto.ResumeRequest.EducationDto("Stanford University", "M.S.", "CS", "2018", "2020", "")),
+                List.of("GCP", "Kubernetes", "Java", "Go"),
+                List.of()
+        );
+
+        var created = resumeService.create("user-share-test", createReq);
+        assertNotNull(created.id());
+
+        // Toggle share to public
+        var shareRes = resumeService.toggleShare("user-share-test", created.id(), true);
+        assertNotNull(shareRes);
+        assertTrue(shareRes.isPublic());
+        assertNotNull(shareRes.shareSlug());
+        assertTrue(shareRes.shareSlug().contains("priya-public"));
+
+        // Retrieve public view without user auth
+        var publicView = resumeService.getPublicResume(shareRes.shareSlug());
+        assertNotNull(publicView);
+        assertEquals("Priya Public", publicView.personalInfo().fullName());
+        assertNotNull(publicView.renderedHtml());
+        assertTrue(publicView.renderedHtml().contains("Priya Public"));
+
+        // Render public PDF
+        byte[] publicPdf = resumeService.renderPublicPdf(shareRes.shareSlug());
+        assertNotNull(publicPdf);
+        assertTrue(publicPdf.length > 0);
     }
 }

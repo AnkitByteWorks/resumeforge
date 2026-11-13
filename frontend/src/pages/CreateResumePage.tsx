@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router'
 import { AppLayout } from '../components/AppLayout'
 import { useAuth } from '../auth/auth-context'
@@ -12,8 +12,11 @@ import {
   checkDraftAts,
   parseResumePdf,
   generateCoverLetter,
+  toggleShareResume,
 } from '../api/resumes'
 import { cleanDraft } from '../lib/draft'
+import { ROLE_STARTERS, type RoleStarter } from '../lib/starters'
+import { auditDraftAts, type BulletAuditItem } from '../lib/atsAudit'
 import type { ResumeDraft, EnhanceBulletResponse, TailorResumeResponse, AtsReport, CoverLetterResponse } from '../types'
 
 const STEPS = [
@@ -109,7 +112,7 @@ export function CreateResumePage() {
   }, [])
 
   // Step 1 State
-  const [inputMode, setInputMode] = useState<'pdf' | 'text'>('pdf')
+  const [inputMode, setInputMode] = useState<'starters' | 'pdf' | 'text'>('starters')
   const [rawText, setRawText] = useState('')
   const [targetRole, setTargetRole] = useState('')
   const [includePhoto, setIncludePhoto] = useState(false)
@@ -177,6 +180,18 @@ export function CreateResumePage() {
 
   // Skills input state
   const [newSkillInput, setNewSkillInput] = useState('')
+
+  // --- Feature 2 & 3: ATS Audit & Share Modal State ---
+  const [isAtsDrawerOpen, setIsAtsDrawerOpen] = useState(false)
+  const [savedResumeId, setSavedResumeId] = useState<string | null>(null)
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+  const [isSharing, setIsSharing] = useState(false)
+  const [shareCopied, setShareCopied] = useState(false)
+  const [shareSlug, setShareSlug] = useState<string | null>(null)
+  const [isResumePublic, setIsResumePublic] = useState(false)
+
+  // Real-time memoized ATS audit
+  const liveAtsAudit = useMemo(() => auditDraftAts(draft), [draft])
 
   // Section Reordering Helper
   const moveSection = (idx: number, direction: 'up' | 'down') => {
@@ -574,11 +589,131 @@ export function CreateResumePage() {
     }
   }
 
+  // Starter Selection Handler
+  const handleSelectStarter = (starter: RoleStarter) => {
+    const resolvedHeadline = starter.draft.personalInfo?.headline || starter.role
+    const resolvedDraft: ResumeDraft = {
+      ...starter.draft,
+      personalInfo: {
+        ...starter.draft.personalInfo,
+        fullName: user?.name || starter.draft.personalInfo?.fullName || 'Your Name',
+        email: user?.email || starter.draft.personalInfo?.email || '',
+        headline: resolvedHeadline,
+        photoUrl: includePhoto ? photoBase64 : (starter.draft.personalInfo?.photoUrl || ''),
+      },
+      templateId: starter.recommendedTemplate || starter.draft.templateId || 'modern-02',
+      accentColor: starter.accentColor || starter.draft.accentColor || '#1e3a8a',
+      fontFamily: starter.fontFamily || starter.draft.fontFamily || 'sans',
+    }
+    setTargetRole(starter.role)
+    setDraft(resolvedDraft)
+    setCurrentStep(3)
+    void updatePreview(resolvedDraft)
+  }
+
+  // 1-Click Action Verb Replacement Handler
+  const handleReplaceBulletVerb = (item: BulletAuditItem, newVerb: string) => {
+    if (!draft) return
+    // Check if it belongs to experience
+    const expIndex = (draft.experience || []).findIndex(
+      (e) => (e.company || 'Experience') === item.companyOrProject
+    )
+    if (expIndex !== -1) {
+      const expList = [...(draft.experience || [])]
+      const exp = expList[expIndex]
+      if (exp && exp.bullets && exp.bullets[item.bulletIndex] !== undefined) {
+        const orig = exp.bullets[item.bulletIndex]
+        const words = orig.trim().split(/\s+/)
+        words[0] = newVerb
+        const replaced = words.join(' ')
+        const updatedBullets = [...exp.bullets]
+        updatedBullets[item.bulletIndex] = replaced
+        expList[expIndex] = { ...exp, bullets: updatedBullets }
+        handleDraftChange({ ...draft, experience: expList })
+        return
+      }
+    }
+
+    // Check if it belongs to projects
+    const projIndex = (draft.projects || []).findIndex(
+      (p) => (p.name || 'Project') === item.companyOrProject
+    )
+    if (projIndex !== -1) {
+      const projList = [...(draft.projects || [])]
+      const proj = projList[projIndex]
+      if (proj && proj.bullets && proj.bullets[item.bulletIndex] !== undefined) {
+        const orig = proj.bullets[item.bulletIndex]
+        const words = orig.trim().split(/\s+/)
+        words[0] = newVerb
+        const replaced = words.join(' ')
+        const updatedBullets = [...proj.bullets]
+        updatedBullets[item.bulletIndex] = replaced
+        projList[projIndex] = { ...proj, bullets: updatedBullets }
+        handleDraftChange({ ...draft, projects: projList })
+        return
+      }
+    }
+  }
+
+  // Recruiter Portfolio Share Handlers
+  const handleOpenShareModal = async () => {
+    if (!draft) return
+    setIsShareModalOpen(true)
+    if (!savedResumeId) {
+      setIsSharing(true)
+      try {
+        const saved = await saveResume(cleanDraft(draft))
+        setSavedResumeId(saved.id)
+        if (saved.shareSlug) setShareSlug(saved.shareSlug)
+        if (saved.isPublic !== undefined) setIsResumePublic(saved.isPublic)
+      } catch (err) {
+        console.error('Failed to auto-save before share', err)
+      } finally {
+        setIsSharing(false)
+      }
+    }
+  }
+
+  const handleToggleShare = async () => {
+    let targetId = savedResumeId
+    setIsSharing(true)
+    try {
+      if (!targetId) {
+        if (!draft) return
+        const saved = await saveResume(cleanDraft(draft))
+        targetId = saved.id
+        setSavedResumeId(saved.id)
+        if (saved.shareSlug) setShareSlug(saved.shareSlug)
+        if (saved.isPublic !== undefined) setIsResumePublic(saved.isPublic)
+      }
+      const nextPublic = !isResumePublic
+      const res = await toggleShareResume(targetId, nextPublic)
+      setIsResumePublic(res.isPublic)
+      setShareSlug(res.shareSlug)
+    } catch (err) {
+      console.error('Toggle share error', err)
+      alert('Could not update share settings: ' + (err instanceof Error ? err.message : 'Unknown error'))
+    } finally {
+      setIsSharing(false)
+    }
+  }
+
+  const handleCopyShareLink = () => {
+    if (!shareSlug) return
+    const url = `${window.location.origin}/p/${shareSlug}`
+    navigator.clipboard.writeText(url)
+    setShareCopied(true)
+    setTimeout(() => setShareCopied(false), 2000)
+  }
+
   const handleSave = async () => {
     if (!draft) return
     setIsLoading(true)
     try {
-      await saveResume(cleanDraft(draft))
+      const saved = await saveResume(cleanDraft(draft))
+      setSavedResumeId(saved.id)
+      if (saved.shareSlug) setShareSlug(saved.shareSlug)
+      if (saved.isPublic !== undefined) setIsResumePublic(saved.isPublic)
       navigate('/dashboard')
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to save resume.'
@@ -769,45 +904,130 @@ export function CreateResumePage() {
             <label className="block text-sm font-medium text-zinc-300 mb-2">
               Choose How to Start
             </label>
-            <div className="grid grid-cols-2 p-1 bg-black/40 border border-white/10 rounded-xl gap-1">
+            <div className="grid grid-cols-3 p-1 bg-black/40 border border-white/10 rounded-xl gap-1">
               <button
                 type="button"
-                onClick={() => setInputMode('pdf')}
-                className={`py-3 px-4 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                  inputMode === 'pdf'
-                    ? 'bg-[#84cc16] text-black shadow-lg shadow-[#84cc16]/20'
+                onClick={() => setInputMode('starters')}
+                className={`py-3 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  inputMode === 'starters'
+                    ? 'bg-[#84cc16] text-black shadow-lg shadow-[#84cc16]/20 font-bold'
                     : 'text-zinc-400 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <span>⚡ Role Starters</span>
+                <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
+                  inputMode === 'starters' ? 'bg-black/20 text-black' : 'bg-[#84cc16]/10 text-[#84cc16]'
+                }`}>
+                  Instant
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setInputMode('pdf')}
+                className={`py-3 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  inputMode === 'pdf'
+                    ? 'bg-[#84cc16] text-black shadow-lg shadow-[#84cc16]/20 font-bold'
+                    : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
-                <span>Upload Resume (PDF)</span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
+                <span>Upload PDF</span>
+                <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
                   inputMode === 'pdf' ? 'bg-black/20 text-black' : 'bg-[#84cc16]/10 text-[#84cc16]'
                 }`}>
-                  New ✨
+                  AI
                 </span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setInputMode('text')}
-                className={`py-3 px-4 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                className={`py-3 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   inputMode === 'text'
-                    ? 'bg-[#84cc16] text-black shadow-lg shadow-[#84cc16]/20'
+                    ? 'bg-[#84cc16] text-black shadow-lg shadow-[#84cc16]/20 font-bold'
                     : 'text-zinc-400 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
-                <span>Type or Paste Text</span>
+                <span>Type Text</span>
               </button>
             </div>
           </div>
 
-          {inputMode === 'pdf' ? (
+          {inputMode === 'starters' ? (
+            /* 1-Click Role Starters Grid */
+            <div className="space-y-4 pt-1">
+              <div className="flex items-center justify-between text-xs text-zinc-400 px-1">
+                <span>Select a pre-filled, battle-tested role starter to launch directly into editing:</span>
+                <span className="text-[#84cc16] font-semibold">5 Production Roles</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {ROLE_STARTERS.map((starter) => (
+                  <div
+                    key={starter.id}
+                    className="bg-black/40 border border-white/10 hover:border-[#84cc16]/60 rounded-xl p-4 transition-all duration-200 hover:scale-[1.01] flex flex-col justify-between group shadow-sm hover:shadow-[#84cc16]/5"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-2xl p-2 rounded-lg bg-white/5 border border-white/10 group-hover:border-[#84cc16]/30 transition-colors">
+                            {starter.icon}
+                          </span>
+                          <div>
+                            <h4 className="text-sm font-bold text-white group-hover:text-[#84cc16] transition-colors">
+                              {starter.role}
+                            </h4>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-zinc-300 font-medium">
+                                {starter.category}
+                              </span>
+                              <span className="text-[10px] text-zinc-400">
+                                {starter.experienceLevel}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-zinc-300 mb-3 leading-relaxed">
+                        {starter.tagline}
+                      </p>
+
+                      <div className="flex flex-wrap gap-1 mb-4">
+                        {starter.skillsPreview.slice(0, 4).map((tag: string) => (
+                          <span
+                            key={tag}
+                            className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/[0.04] text-zinc-400 border border-white/5"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                        {starter.skillsPreview.length > 4 && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.04] text-zinc-500">
+                            +{starter.skillsPreview.length - 4}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSelectStarter(starter)}
+                      className="w-full py-2 px-3 rounded-lg bg-white/5 hover:bg-[#84cc16] text-zinc-200 hover:text-black font-semibold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer group-hover:bg-[#84cc16] group-hover:text-black"
+                    >
+                      <span>Load Role Starter</span>
+                      <span>→</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : inputMode === 'pdf' ? (
             /* PDF Upload Dropzone */
             <div className="space-y-4 pt-1">
               <input
@@ -1095,6 +1315,35 @@ export function CreateResumePage() {
           <div className="flex items-center justify-between mb-1 shrink-0">
             <h2 className="text-2xl font-medium text-white">Editor</h2>
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsAtsDrawerOpen(true)}
+                className="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-white border border-white/10 text-xs font-semibold px-3 py-2 rounded-lg transition-all cursor-pointer shadow-sm group"
+                title="View real-time ATS scorecard and action verb suggestions"
+              >
+                <span>🎯 ATS:</span>
+                <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold ${
+                  liveAtsAudit.score >= 80 ? 'bg-[#84cc16] text-black' :
+                  liveAtsAudit.score >= 60 ? 'bg-amber-400 text-black' :
+                  'bg-red-500 text-white'
+                }`}>
+                  {liveAtsAudit.score}% ({liveAtsAudit.grade})
+                </span>
+                {liveAtsAudit.weakVerbCount > 0 && (
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" title={`${liveAtsAudit.weakVerbCount} weak verbs detected`} />
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={handleOpenShareModal}
+                className="flex items-center gap-1.5 bg-gradient-to-r from-blue-600/30 to-indigo-600/30 hover:from-blue-600/50 hover:to-indigo-600/50 text-blue-200 border border-blue-500/40 text-xs font-semibold px-3 py-2 rounded-lg transition-all cursor-pointer shadow-sm hover:border-blue-400"
+                title="Get a public shareable portfolio link for recruiters"
+              >
+                <span>🔗 Share</span>
+                {isResumePublic && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#84cc16]" title="Public Portfolio Active" />
+                )}
+              </button>
               <button
                 type="button"
                 onClick={handleOpenCoverLetter}
@@ -2500,6 +2749,347 @@ export function CreateResumePage() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- Live ATS Scorecard & Action Verb Analyzer Modal --- */}
+      {isAtsDrawerOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#121215] border border-white/15 rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-black/40">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">🎯</span>
+                <div>
+                  <h3 className="text-lg font-bold text-white leading-tight">Live ATS Scorecard &amp; Action Verb Analyzer</h3>
+                  <p className="text-xs text-zinc-400">Real-time keyword strength, quantifiable metrics, and 1-click power verb upgrades</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAtsDrawerOpen(false)}
+                className="text-zinc-400 hover:text-white text-lg p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 overflow-y-auto space-y-6 custom-scrollbar">
+              {/* Top Overview Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                {/* Score */}
+                <div className="bg-black/50 border border-white/10 rounded-xl p-4 flex flex-col justify-between">
+                  <div>
+                    <span className="text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">Overall ATS Score</span>
+                    <div className="flex items-baseline gap-2 mt-1">
+                      <span className={`text-4xl font-extrabold ${
+                        liveAtsAudit.score >= 80 ? 'text-[#84cc16]' :
+                        liveAtsAudit.score >= 60 ? 'text-amber-400' : 'text-red-400'
+                      }`}>
+                        {liveAtsAudit.score}%
+                      </span>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                        liveAtsAudit.score >= 80 ? 'bg-[#84cc16]/20 text-[#84cc16]' :
+                        liveAtsAudit.score >= 60 ? 'bg-amber-400/20 text-amber-400' : 'bg-red-500/20 text-red-400'
+                      }`}>
+                        Grade {liveAtsAudit.grade}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-zinc-300 mt-2">
+                    {liveAtsAudit.suggestions[0] || 'Strong ATS structure and readability.'}
+                  </p>
+                </div>
+
+                {/* Metrics Ratio */}
+                <div className="bg-black/50 border border-white/10 rounded-xl p-4 flex flex-col justify-between">
+                  <div>
+                    <span className="text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">Quantified Impact</span>
+                    <div className="flex items-baseline gap-2 mt-1">
+                      <span className="text-2xl font-bold text-white">
+                        {liveAtsAudit.metricCount} / {liveAtsAudit.totalBullets}
+                      </span>
+                      <span className="text-xs font-medium text-zinc-400">
+                        ({liveAtsAudit.metricPercentage}%)
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-zinc-400 mt-2">
+                    Bullets contain %, $, or numbers. ATS scoring rewards measurable business results.
+                  </p>
+                </div>
+
+                {/* Verb Health */}
+                <div className="bg-black/50 border border-white/10 rounded-xl p-4 flex flex-col justify-between">
+                  <div>
+                    <span className="text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">Action Verbs Quality</span>
+                    <div className="flex items-baseline gap-2 mt-1">
+                      <span className={`text-2xl font-bold ${liveAtsAudit.weakVerbCount > 0 ? 'text-amber-400' : 'text-[#84cc16]'}`}>
+                        {liveAtsAudit.weakVerbCount} Weak
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-zinc-400 mt-2">
+                    Replace passive phrasing like &quot;worked on&quot; or &quot;responsible for&quot; with decisive verbs.
+                  </p>
+                </div>
+              </div>
+
+              {/* Repetition Warning if any */}
+              {liveAtsAudit.repeatedVerbs.length > 0 && (
+                <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-start gap-2.5">
+                  <span className="text-amber-400 text-base">⚠️</span>
+                  <div className="text-xs text-zinc-300">
+                    <span className="font-semibold text-amber-300">Frequent Verb Repetition: </span>
+                    You used {liveAtsAudit.repeatedVerbs.map((v: { verb: string; count: number }) => `"${v.verb}" (${v.count}x)`).join(', ')}.
+                    Consider diversifying with synonyms to showcase broader competencies.
+                  </div>
+                </div>
+              )}
+
+              {/* Suggestions / Health */}
+              {liveAtsAudit.suggestions.length > 0 && (
+                <div className="bg-black/30 border border-white/10 rounded-xl p-4">
+                  <span className="text-xs font-bold text-white block mb-2 uppercase tracking-wider">
+                    Recommended Improvements
+                  </span>
+                  <div className="space-y-1.5">
+                    {liveAtsAudit.suggestions.map((sug: string, idx: number) => (
+                      <div key={idx} className="flex items-start gap-2 text-xs text-zinc-300">
+                        <span className="text-[#84cc16] mt-0.5">💡</span>
+                        <span>{sug}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 1-Click Power Verb Optimizer */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <span>⚡ 1-Click Action Verb Optimizer</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-zinc-300">
+                      {liveAtsAudit.bullets.filter((b) => b.isWeakVerb).length} detected
+                    </span>
+                  </h4>
+                  <span className="text-[11px] text-zinc-400">Click any power verb to replace instantly in draft</span>
+                </div>
+
+                {liveAtsAudit.bullets.filter((b) => b.isWeakVerb).length === 0 ? (
+                  <div className="p-4 bg-emerald-950/20 border border-emerald-500/30 rounded-xl text-center">
+                    <span className="text-emerald-400 font-semibold text-xs">
+                      🎉 Perfect! All your bullet points begin with strong, active impact verbs.
+                    </span>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {liveAtsAudit.bullets
+                      .filter((b) => b.isWeakVerb)
+                      .map((item: BulletAuditItem, idx: number) => (
+                        <div
+                          key={`${item.companyOrProject}-${item.bulletIndex}-${idx}`}
+                          className="bg-black/40 border border-amber-500/30 hover:border-amber-500/60 rounded-xl p-3.5 space-y-2.5 transition-all"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                              💼 {item.companyOrProject}
+                            </span>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                              Weak start: &quot;{item.firstWord}&quot;
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-zinc-300 leading-relaxed font-sans bg-black/30 p-2.5 rounded-lg border border-white/5">
+                            {item.text}
+                          </p>
+
+                          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                            <span className="text-[10px] text-zinc-400 font-semibold mr-1">
+                              1-Click Replace:
+                            </span>
+                            {item.suggestedPowerVerbs.map((verb: string) => (
+                              <button
+                                key={verb}
+                                type="button"
+                                onClick={() => handleReplaceBulletVerb(item, verb)}
+                                className="px-2.5 py-1 rounded-md bg-[#84cc16]/10 hover:bg-[#84cc16] text-[#84cc16] hover:text-black border border-[#84cc16]/40 text-xs font-semibold transition-all cursor-pointer shadow-sm active:scale-95"
+                                title={`Replace with "${verb}"`}
+                              >
+                                + {verb}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-3.5 border-t border-white/10 bg-black/40 flex items-center justify-between">
+              <span className="text-xs text-zinc-500">Updates sync to your draft and live A4 preview instantly</span>
+              <button
+                type="button"
+                onClick={() => setIsAtsDrawerOpen(false)}
+                className="px-4 py-2 bg-[#84cc16] hover:bg-[#65a30d] text-black rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Close &amp; Keep Editing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- Public Shareable Link (Web Portfolio) Modal --- */}
+      {isShareModalOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#121215] border border-white/15 rounded-2xl max-w-xl w-full flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-black/40">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">🔗</span>
+                <div>
+                  <h3 className="text-lg font-bold text-white leading-tight">Recruiter Web Portfolio Link</h3>
+                  <p className="text-xs text-zinc-400">Share your live resume as a dedicated public web page</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsShareModalOpen(false)}
+                className="text-zinc-400 hover:text-white text-lg p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-5">
+              {/* Toggle switch container */}
+              <div className="flex items-center justify-between p-4 bg-black/40 border border-white/10 rounded-xl">
+                <div>
+                  <h4 className="text-sm font-semibold text-white">Public Recruiter Link</h4>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    {isResumePublic
+                      ? 'Anyone with this link can view your portfolio & download PDF'
+                      : 'Resume is currently private and only visible to you'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleToggleShare}
+                  disabled={isSharing}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
+                    isResumePublic ? 'bg-[#84cc16]' : 'bg-zinc-700'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      isResumePublic ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {isSharing ? (
+                <div className="p-8 text-center text-xs text-zinc-400 flex flex-col items-center gap-2">
+                  <div className="w-5 h-5 border-2 border-[#84cc16] border-t-transparent rounded-full animate-spin" />
+                  <span>Updating share settings...</span>
+                </div>
+              ) : isResumePublic && shareSlug ? (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                  <div>
+                    <label className="text-xs font-semibold text-zinc-300 block mb-1.5">
+                      Your Dedicated Portfolio Link
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={`${window.location.origin}/p/${shareSlug}`}
+                        className="w-full bg-black/60 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 font-mono focus:border-[#84cc16] outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleCopyShareLink}
+                        className="px-4 py-2 bg-[#84cc16] hover:bg-[#65a30d] text-black text-xs font-bold rounded-lg transition-all shrink-0 cursor-pointer"
+                      >
+                        {shareCopied ? '✓ Copied!' : 'Copy'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <a
+                      href={`/p/${shareSlug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs text-[#84cc16] hover:underline font-semibold"
+                    >
+                      <span>Open Recruiter View in New Tab</span>
+                      <span>↗</span>
+                    </a>
+                  </div>
+
+                  <div className="p-3.5 bg-white/[0.02] border border-white/5 rounded-xl space-y-2 text-xs text-zinc-400">
+                    <span className="font-semibold text-zinc-200 block text-[11px] uppercase tracking-wider">
+                      Included with Your Portfolio Page:
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[#84cc16]">✓</span>
+                        <span>Full A4 responsive web layout</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[#84cc16]">✓</span>
+                        <span>1-Click Recruiter PDF download</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[#84cc16]">✓</span>
+                        <span>Direct Email &amp; Phone buttons</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[#84cc16]">✓</span>
+                        <span>No login required for recruiters</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-6 bg-black/30 border border-zinc-800 rounded-xl text-center space-y-3">
+                  <div className="w-10 h-10 rounded-full bg-zinc-800/80 mx-auto flex items-center justify-center text-lg">
+                    🔒
+                  </div>
+                  <div>
+                    <h5 className="text-xs font-semibold text-white">Shareable link is disabled</h5>
+                    <p className="text-[11px] text-zinc-400 mt-1 max-w-sm mx-auto">
+                      Switch the toggle above to enable an instant, unique web portfolio URL you can put on LinkedIn, GitHub, or send directly to recruiters.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleToggleShare}
+                    className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-semibold transition-all cursor-pointer"
+                  >
+                    Enable Public Link
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-3.5 border-t border-white/10 bg-black/40 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setIsShareModalOpen(false)}
+                className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

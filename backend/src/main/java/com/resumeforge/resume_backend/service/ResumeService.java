@@ -1,7 +1,9 @@
 package com.resumeforge.resume_backend.service;
 
+import com.resumeforge.resume_backend.dto.PublicResumeDto;
 import com.resumeforge.resume_backend.dto.ResumeRequest;
 import com.resumeforge.resume_backend.dto.ResumeResponse;
+import com.resumeforge.resume_backend.dto.ShareResumeResponse;
 import com.resumeforge.resume_backend.exception.ResourceNotFoundException;
 import com.resumeforge.resume_backend.model.Resume;
 import com.resumeforge.resume_backend.repository.ResumeRepository;
@@ -10,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +20,7 @@ public class ResumeService {
 
     private final ResumeRepository repository;
     private final AtsService atsService;
+    private final ResumeRenderService renderService;
 
     public ResumeResponse create(String userId, ResumeRequest req) {
         Resume resume = new Resume();
@@ -51,6 +55,65 @@ public class ResumeService {
 
     public void delete(String userId, String id) {
         repository.delete(getEntity(userId, id));
+    }
+
+    public ShareResumeResponse toggleShare(String userId, String id, Boolean makePublic) {
+        Resume resume = getEntity(userId, id);
+        boolean targetPublic = makePublic != null ? makePublic : !resume.isPublic();
+        resume.setPublic(targetPublic);
+
+        if (resume.getShareSlug() == null || resume.getShareSlug().isBlank()) {
+            resume.setShareSlug(generateUniqueSlug(resume));
+        }
+
+        repository.save(resume);
+        return new ShareResumeResponse(resume.getId(), resume.isPublic(), resume.getShareSlug(), "/p/" + resume.getShareSlug());
+    }
+
+    private String generateUniqueSlug(Resume resume) {
+        String base = "resume";
+        if (resume.getPersonalInfo() != null && resume.getPersonalInfo().fullName() != null && !resume.getPersonalInfo().fullName().isBlank()) {
+            base = resume.getPersonalInfo().fullName().toLowerCase()
+                    .replaceAll("[^a-z0-9]+", "-")
+                    .replaceAll("^-+|-+$", "");
+            if (base.isBlank()) base = "resume";
+        }
+        String randomSuffix = UUID.randomUUID().toString().substring(0, 6);
+        String candidate = base + "-" + randomSuffix;
+        while (repository.findByShareSlug(candidate).isPresent()) {
+            randomSuffix = UUID.randomUUID().toString().substring(0, 6);
+            candidate = base + "-" + randomSuffix;
+        }
+        return candidate;
+    }
+
+    public PublicResumeDto getPublicResume(String shareSlug) {
+        Resume resume = repository.findByShareSlugAndIsPublicTrue(shareSlug)
+                .orElseThrow(() -> new ResourceNotFoundException("Resume not found or has been set to private."));
+
+        String renderedHtml = renderService.renderHtml(resume);
+        return new PublicResumeDto(
+                resume.getShareSlug(),
+                resume.getTitle(),
+                resume.getTemplateId(),
+                resume.getAccentColor(),
+                resume.getFontFamily(),
+                resume.getPersonalInfo(),
+                resume.getSummary(),
+                resume.getExperience(),
+                resume.getProjects(),
+                resume.getEducation(),
+                resume.getSkills(),
+                resume.getCertifications(),
+                renderedHtml,
+                resume.getUpdatedAt()
+        );
+    }
+
+    public byte[] renderPublicPdf(String shareSlug) {
+        Resume resume = repository.findByShareSlugAndIsPublicTrue(shareSlug)
+                .orElseThrow(() -> new ResourceNotFoundException("Resume not found or has been set to private."));
+        return renderService.renderPdf(resume);
     }
 
     public Resume getEntity(String userId, String id) {

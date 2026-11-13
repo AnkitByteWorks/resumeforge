@@ -36,6 +36,10 @@ public class Resume {
     private String pageDensity = "auto";
     private String accentColor;
     private String fontFamily;
+    private boolean isPublic = false;
+
+    @Indexed(unique = true, sparse = true)
+    private String shareSlug;
 
     @CreatedDate
     private Instant createdAt;

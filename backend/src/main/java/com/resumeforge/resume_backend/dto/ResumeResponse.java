@@ -12,6 +12,7 @@ public record ResumeResponse(
         List<Resume.Education> education, List<String> skills,
         List<String> certifications, Integer atsScore,
         String pageDensity, String accentColor, String fontFamily,
+        boolean isPublic, String shareSlug,
         Instant createdAt, Instant updatedAt) {
 
     public static ResumeResponse from(Resume r) {
@@ -21,6 +22,7 @@ public record ResumeResponse(
                 r.getCertifications(), r.getAtsScore(),
                 r.getPageDensity() != null ? r.getPageDensity() : "auto",
                 r.getAccentColor(), r.getFontFamily(),
+                r.isPublic(), r.getShareSlug(),
                 r.getCreatedAt(), r.getUpdatedAt());
     }
 }

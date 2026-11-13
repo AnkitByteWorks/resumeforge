@@ -4,10 +4,12 @@ import CreateResumePage from './pages/CreateResumePage'
 import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
+import PublicResumePage from './pages/PublicResumePage'
 
 export default function App() {
   return (
     <Routes>
+      <Route path="/p/:slug" element={<PublicResumePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route element={<ProtectedRoute />}>

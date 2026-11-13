@@ -7,9 +7,11 @@ import type {
   CoverLetterResponse,
   EnhanceBulletRequest,
   EnhanceBulletResponse,
+  PublicResumeDto,
   ResumeDraft,
   ResumeSummary,
   SavedResume,
+  ShareResumeResponse,
   TailorResumeResponse,
   TemplateInfo,
 } from '../types'
@@ -178,5 +180,18 @@ export function generateCoverLetter(params: CoverLetterRequest): Promise<CoverLe
   return api<CoverLetterResponse>('/api/v1/ai/cover-letter', {
     method: 'POST',
     body: params,
+  })
+}
+
+export function toggleShareResume(id: string, makePublic?: boolean): Promise<ShareResumeResponse> {
+  const query = makePublic !== undefined ? `?makePublic=${makePublic}` : ''
+  return api<ShareResumeResponse>(`/api/v1/resumes/${id}/share${query}`, {
+    method: 'POST',
+  })
+}
+
+export function fetchPublicResume(shareSlug: string): Promise<PublicResumeDto> {
+  return api<PublicResumeDto>(`/api/v1/public/resumes/${shareSlug}`, {
+    auth: false,
   })
 }

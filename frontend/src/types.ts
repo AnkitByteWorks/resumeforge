@@ -17,6 +17,8 @@ export interface ResumeSummary {
   templateId: string
   updatedAt: string | null
   atsScore?: number
+  isPublic?: boolean
+  shareSlug?: string
 }
 
 export interface TemplateInfo {
@@ -81,6 +83,8 @@ export interface ResumeDraft {
   pageDensity?: 'auto' | 'spacious' | 'balanced' | 'compact' | 'ultra_compact' | string
   accentColor?: string
   fontFamily?: string
+  isPublic?: boolean
+  shareSlug?: string
 }
 
 export interface CoverLetterRequest {
@@ -125,6 +129,8 @@ export interface AiAnswer {
 
 export interface SavedResume {
   id: string
+  isPublic?: boolean
+  shareSlug?: string
 }
 
 export interface EnhanceBulletRequest {
@@ -175,4 +181,28 @@ export interface AtsReport {
     missing: string[]
   }
   suggestions: string[]
+}
+
+export interface ShareResumeResponse {
+  id: string
+  isPublic: boolean
+  shareSlug: string
+  shareUrl: string
+}
+
+export interface PublicResumeDto {
+  shareSlug: string
+  title: string
+  templateId: string
+  accentColor?: string
+  fontFamily?: string
+  personalInfo: DraftPersonalInfo
+  summary: string
+  experience: DraftExperience[]
+  projects: DraftProject[]
+  education: DraftEducation[]
+  skills: string[]
+  certifications: string[]
+  renderedHtml: string
+  updatedAt: string
 }

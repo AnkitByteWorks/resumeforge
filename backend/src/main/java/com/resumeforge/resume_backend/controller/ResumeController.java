@@ -4,6 +4,7 @@ import com.resumeforge.resume_backend.security.CurrentUserId;
 
 import com.resumeforge.resume_backend.dto.ResumeRequest;
 import com.resumeforge.resume_backend.dto.ResumeResponse;
+import com.resumeforge.resume_backend.dto.ShareResumeResponse;
 import com.resumeforge.resume_backend.service.ResumeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -49,5 +50,12 @@ public class ResumeController {
     public void delete(@CurrentUserId String userId,
                        @PathVariable String id) {
         service.delete(userId, id);
+    }
+
+    @PostMapping("/{id}/share")
+    public ShareResumeResponse toggleShare(@CurrentUserId String userId,
+                                           @PathVariable String id,
+                                           @RequestParam(required = false) Boolean makePublic) {
+        return service.toggleShare(userId, id, makePublic);
     }
 }
